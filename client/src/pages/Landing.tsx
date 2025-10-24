@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CompanionCard } from "@/components/companion/CompanionCard";
+import { BookingModal } from "@/components/booking/BookingModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Search, SlidersHorizontal } from "lucide-react";
@@ -28,6 +29,8 @@ export default function Landing() {
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
 
   // Get user's geolocation
   useEffect(() => {
