@@ -30,7 +30,7 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2" data-testid="link-home">
             <img 
-              src="/attached_assets/fliQ_logo_1761347377488.png" 
+              src="/logo.png" 
               alt="fliQ" 
               className="h-10"
             />
