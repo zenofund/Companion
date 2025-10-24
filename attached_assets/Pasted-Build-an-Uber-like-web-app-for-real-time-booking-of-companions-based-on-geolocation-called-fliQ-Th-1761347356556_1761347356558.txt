@@ -1,0 +1,92 @@
+Build an Uber-like web app for real-time booking of companions based on geolocation, called fliQ. The app displays companions on a map view with a clickable link to view their profiles which is displayed on another page. The profile contains Avatar, Name, Rate,City, Age,Distance (stylish tab with represented with the elegant Lucide React icons) , Service Description, Interest and Languages and a beautifuly laid gallery. There will e a book now button at the end of the page
+
+Frontend: React + TailwindCSS + Lucide icons
+
+Backend: Serverless API routes (no Express)
+
+Database: Supabase Postgres (handled later)
+
+Payments: Paystack API for secure transactions
+
+AI Moderation: OpenAI API for safe image and content uploads (no Base64)
+
+Realtime Features: Pusher or Supabase Realtime for booking notifications
+
+Hosting: Optimized for Vercel or Netlify
+
+Booking & Client dashboard:
+When a client clicks the Book Now button, a responsive modal pops up. Client selects date and time (date picker), manually enter the number of hours, Opional comment, Where to meet and submits. Paystack initializes payment. Client is redirected to the payment page. if payment is successful, their booking is marked as paid. The client dashboard contains different links (Search companion, My bookigs, support etc). Populate dashboard with various useful insights.
+
+Companion receives this request in their rich dashboard. Companion has only 15min to accept/reject request. If accepted, it's a contract and a private chat becomes available for the whole the request lasts. Once request is fulfilled, companion marks request as completed. Chat bbecomes unavailable. Both companion and client can rate their experiences at this moment.
+
+Companion Onboarding:
+Companion registers an account and is redireted to their profile update: Full Name, Avatar, Email, Phone, Date of birth, City, Interests, Language, Bank Details (automatic verification through Paystack API) and gallery (6 pictures - opens in a resizable lightbox) and set Geolocation (automatically calculated) save and are redirected to the dashboard. Dashboard contains various stats ( Current Bookings, Earnings, Total bookings and others). On the dshboard, companion can toggle availability/Online. This determine their visibilityon the client's dashboard.
+
+Payment:
+Payment is proccessed by Paystck Split Subaccount API. Once companion verifies their account in profile setup, an option to connect their account becomes available. Once clicked, Paystack automatically creates a subaccount with the split formula (configurable by the admin). When companion completes a request, payment is made directly into their subaccount which will be handled by Paystack.
+
+Super Admin:
+The super admin owns the app and has a super cape to to be everywhere in the app, ensuring safety for all users. Admin will do these tasks:
+- Configure the split percentage
+- Verifies/rejects companion profile
+- Ban all users for inappropriate activities
+- Configure and manage in-app notification
+Admin Dashboardwill host differen useful insghts
+
+AI Content Moderation (OpenAI API)
+
+Companions upload profile pictures or bio text.
+- Before saving, send data to OpenAI moderation API (use the safest method beside Base64).
+
+If flagged → image/content is hidden pending admin review.
+Display “pending moderation” notice on profile.
+Workflow Explanation:
+Use async fetch with proper try/catch. Always return a JSON response (success or fail) so the frontend doesn’t hang.
+
+
+Chat & Realtime Messaging
+
+Chat becomes available only for active bookings.
+
+Uses WebSocket or Pusher channel with unique booking ID.
+
+When booking expires, chat auto-locks and archive is saved.
+
+Notifications update in real time for new messages or booking status.
+
+Workflow Explanation:
+Create ChatBox component using hooks and avoid calling API routes inside state-dependent loops.
+
+🧠 Infinite Loop / Loading Precautions
+
+Explain these in the code comments and ensure V0 adheres to them:
+
+1️⃣ API calls in React hooks must not depend on the same state being updated.
+
+// ✅ Good
+useEffect(() => {
+  axios.get('/api/bookings').then(res => setBookings(res.data));
+}, []); // run once only
+
+// ❌ Bad — causes infinite loop
+useEffect(() => {
+  axios.get('/api/bookings').then(res => setBookings(res.data));
+}, [bookings]);
+
+
+2️⃣ Always return a response in API routes.
+Missing return res.status(...).json(...) causes hanging requests.
+
+3️⃣ Avoid recursive API calls.
+Never fetch from the same /api/... route inside itself.
+
+4️⃣ Handle OPTIONS and CORS headers properly.
+
+res.setHeader('Access-Control-Allow-Origin', '*');
+if (req.method === 'OPTIONS') return res.status(200).end();
+
+
+5️⃣ Always wrap async logic in try/catch to prevent unhandled promise rejections that keep requests open.
+
+Create a comprehensive database schema with appropriate RLS and indexes for optimazion
+Design Guide is attached with Logo and Favicon
