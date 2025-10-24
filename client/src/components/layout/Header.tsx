@@ -85,14 +85,16 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
                 </Button>
 
                 {/* User Menu */}
-                <Link href={`/dashboard/${user.role}`} data-testid="link-dashboard">
-                  <Avatar className="h-9 w-9 hover-elevate cursor-pointer border-2 border-primary/20">
-                    <AvatarImage src={user.avatar} alt={user.name || "User"} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
+                <Avatar 
+                  className="h-9 w-9 hover-elevate cursor-pointer border-2 border-primary/20"
+                  onClick={() => window.location.href = `/dashboard/${user.role}`}
+                  data-testid="link-dashboard"
+                >
+                  <AvatarImage src={user.avatar} alt={user.name || "User"} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {user.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
               </>
             ) : (
               <>
