@@ -4,13 +4,24 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
+import CompanionProfile from "@/pages/CompanionProfile";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import ClientDashboard from "@/pages/dashboard/ClientDashboard";
+import CompanionDashboard from "@/pages/dashboard/CompanionDashboard";
+import AdminDashboard from "@/pages/dashboard/AdminDashboard";
 
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/" component={Landing} />
+      <Route path="/companion/:id" component={CompanionProfile} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/dashboard/client" component={ClientDashboard} />
+      <Route path="/dashboard/companion" component={CompanionDashboard} />
+      <Route path="/dashboard/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

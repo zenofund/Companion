@@ -1,0 +1,271 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Header } from "@/components/layout/Header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+  DollarSign, 
+  Calendar, 
+  Star, 
+  Clock, 
+  TrendingUp, 
+  CheckCircle,
+  XCircle,
+  MessageCircle 
+} from "lucide-react";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+export default function CompanionDashboard() {
+  const { toast } = useToast();
+  const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
+  const { data: profile } = useQuery({ queryKey: ["/api/companion/profile"] });
+  const { data: pendingRequests } = useQuery({ queryKey: ["/api/bookings/pending"] });
+  const { data: stats } = useQuery({ queryKey: ["/api/stats/companion"] });
+
+  const toggleAvailabilityMutation = useMutation({
+    mutationFn: async (isAvailable: boolean) => {
+      return await apiRequest("PATCH", "/api/companion/availability", { isAvailable });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
+      toast({
+        title: "Availability updated",
+        description: profile?.isAvailable ? "You are now offline" : "You are now available",
+      });
+    },
+  });
+
+  const handleBookingAction = useMutation({
+    mutationFn: async ({ bookingId, action }: { bookingId: string; action: "accept" | "reject" }) => {
+      return await apiRequest("POST", `/api/bookings/${bookingId}/${action}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/pending"] });
+      toast({
+        title: "Booking updated",
+        description: "The booking request has been processed",
+      });
+    },
+  });
+
+  const calculateTimeRemaining = (expiresAt: string) => {
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    const minutes = Math.floor(diff / 60000);
+    return minutes > 0 ? `${minutes}m remaining` : "Expired";
+  };
+
+  const profileCompletion = 75; // Calculate based on filled fields
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header user={user} />
+      
+      <main className="pt-16 container mx-auto px-4 py-8">
+        {/* Header with Availability Toggle */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-heading text-3xl font-bold mb-2" data-testid="text-welcome">
+              Welcome back, {user?.name}!
+            </h1>
+            <p className="text-muted-foreground">
+              Manage your bookings and earnings
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Availability</p>
+              <p className="font-semibold">
+                {profile?.isAvailable ? "Online" : "Offline"}
+              </p>
+            </div>
+            <Switch
+              checked={profile?.isAvailable || false}
+              onCheckedChange={(checked) => toggleAvailabilityMutation.mutate(checked)}
+              data-testid="switch-availability"
+            />
+          </div>
+        </div>
+
+        {/* Profile Completion Alert */}
+        {profileCompletion < 100 && (
+          <Card className="mb-6 border-accent bg-accent/5">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-2">Complete Your Profile</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Complete your profile to attract more clients
+                  </p>
+                  <Progress value={profileCompletion} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">{profileCompletion}% complete</p>
+                </div>
+                <Button variant="default" size="sm">Complete Profile</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Bookings</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-active-bookings">
+                {stats?.activeBookings || 0}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Today's Earnings</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-today-earnings">
+                ${stats?.todayEarnings || "0.00"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Response Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-response-rate">
+                {stats?.responseRate || "0"}%
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+              <Star className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-avg-rating">
+                {stats?.averageRating || "0.0"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-total-hours">
+                {stats?.totalHours || 0}h
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Acceptance Rate</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-acceptance-rate">
+                {stats?.acceptanceRate || "0"}%
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Pending Requests */}
+        <div className="mb-8">
+          <h2 className="font-heading text-2xl font-semibold mb-4">Pending Requests</h2>
+          <div className="space-y-4">
+            {pendingRequests && pendingRequests.length > 0 ? (
+              pendingRequests.map((request: any) => (
+                <Card key={request.id} className="border-accent" data-testid={`request-card-${request.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-heading text-lg font-semibold">
+                            {request.clientName}
+                          </h3>
+                          <Badge variant="outline" className="text-xs">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {calculateTimeRemaining(request.requestExpiresAt)}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p className="font-medium text-foreground">{format(new Date(request.bookingDate), "PPP")}</p>
+                            <p className="text-xs">Date</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{request.hours} hours</p>
+                            <p className="text-xs">Duration</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">${request.totalAmount}</p>
+                            <p className="text-xs">Amount</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{request.meetingLocation}</p>
+                            <p className="text-xs">Location</p>
+                          </div>
+                        </div>
+                        {request.specialRequests && (
+                          <p className="mt-3 text-sm text-muted-foreground">
+                            <span className="font-medium">Note:</span> {request.specialRequests}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleBookingAction.mutate({ bookingId: request.id, action: "accept" })}
+                          data-testid={`button-accept-${request.id}`}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Accept
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBookingAction.mutate({ bookingId: request.id, action: "reject" })}
+                          data-testid={`button-reject-${request.id}`}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground" data-testid="text-no-requests">
+                    No pending requests
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
