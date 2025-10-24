@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,14 +104,14 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <Header viewMode={viewMode} onViewModeChange={setViewMode} />
-      
+
       <main className="pt-16">
         {/* Hero Section */}
         <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
           {/* Background Image with Dark Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-background z-0" />
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600')] bg-cover bg-center opacity-20 z-0" />
-          
+
           {/* Hero Content */}
           <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
             <h1 
@@ -125,7 +126,7 @@ export default function Landing() {
             >
               Discover and book professional companions near you with real-time availability
             </p>
-            
+
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto mb-6">
               <div className="relative flex-1">
@@ -195,6 +196,16 @@ export default function Landing() {
           )}
         </section>
       </main>
+
+      {/* Booking Modal */}
+      <BookingModal
+        open={isBookingModalOpen}
+        onOpenChange={setIsBookingModalOpen}
+        companion={selectedCompanion}
+      />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
