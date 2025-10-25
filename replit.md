@@ -10,6 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025 - Production Authentication Fix**
+- Fixed critical production authentication bug by adding `trust proxy` setting to Express
+- This enables proper HTTPS detection when deployed behind reverse proxies (Replit infrastructure)
+- Secure cookies now work correctly in production, resolving "access denied" errors
+
 **October 25, 2025 - UI/UX Improvements**
 - Converted profile editing from full-page modal to Sheet (side drawer overlay) for better UX
 - Created BankSetupModal component that wraps bank account setup in a Dialog for cleaner presentation

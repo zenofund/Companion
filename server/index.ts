@@ -7,6 +7,10 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 const MemoryStore = createMemoryStore(session);
 
+// Trust proxy - Required for production deployments behind reverse proxies (like Replit)
+// This allows Express to correctly detect HTTPS and set secure cookies
+app.set('trust proxy', 1);
+
 export const SESSION_SECRET = process.env.SESSION_SECRET || "fliq-session-secret-change-in-production";
 export const sessionStore = new MemoryStore({
   checkPeriod: 86400000,
