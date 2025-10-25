@@ -370,7 +370,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const companion = await storage.getCompanionByUserId(req.session.user.id);
-      return res.json(companion || null);
+      if (!companion) {
+        return res.json(null);
+      }
+      
+      const user = await storage.getUser(req.session.user.id);
+      return res.json({
+        ...companion,
+        avatar: user?.avatar,
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -382,7 +390,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const data = insertCompanionSchema.parse(req.body);
+      const { avatar, ...companionData } = req.body;
+      const data = insertCompanionSchema.parse(companionData);
+
+      // Update user avatar if provided
+      if (avatar) {
+        await storage.updateUser(req.session.user.id, { avatar });
+      }
 
       // Moderate bio
       if (data.bio) {
@@ -414,7 +428,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Companion profile not found" });
       }
 
-      const data = insertCompanionSchema.partial().parse(req.body);
+      const { avatar, ...companionData } = req.body;
+      const data = insertCompanionSchema.partial().parse(companionData);
+
+      // Update user avatar if provided
+      if (avatar !== undefined) {
+        await storage.updateUser(req.session.user.id, { avatar });
+      }
 
       // Moderate bio if provided
       if (data.bio) {

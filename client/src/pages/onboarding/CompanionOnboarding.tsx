@@ -19,10 +19,13 @@ import {
   Briefcase, 
   Banknote,
   CheckCircle,
-  X
+  X,
+  Camera,
+  Image as ImageIcon
 } from "lucide-react";
 
 const companionProfileSchema = z.object({
+  avatar: z.string().url("Please enter a valid image URL").optional(),
   city: z.string().min(2, "City is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   bio: z.string().min(50, "Bio must be at least 50 characters").max(500, "Bio must be less than 500 characters"),
@@ -32,16 +35,17 @@ const companionProfileSchema = z.object({
   hourlyRate: z.string().min(1, "Hourly rate is required"),
   latitude: z.string().min(1, "Latitude is required"),
   longitude: z.string().min(1, "Longitude is required"),
-  gallery: z.array(z.string()).optional(),
+  gallery: z.array(z.string().url("Each gallery image must be a valid URL")).min(1, "Add at least 1 gallery image").max(6, "Maximum 6 gallery images allowed"),
 });
 
 type CompanionProfileForm = z.infer<typeof companionProfileSchema>;
 
 const STEPS = [
-  { id: 1, title: "Basic Info", icon: User },
-  { id: 2, title: "Location", icon: MapPin },
-  { id: 3, title: "Services", icon: Briefcase },
-  { id: 4, title: "Pricing", icon: Banknote },
+  { id: 1, title: "Photos", icon: Camera },
+  { id: 2, title: "Basic Info", icon: User },
+  { id: 3, title: "Location", icon: MapPin },
+  { id: 4, title: "Services", icon: Briefcase },
+  { id: 5, title: "Pricing", icon: Banknote },
 ];
 
 const AVAILABLE_SERVICES = [
@@ -90,12 +94,15 @@ export default function CompanionOnboarding() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [newGalleryUrl, setNewGalleryUrl] = useState("");
 
   const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
 
   const form = useForm<CompanionProfileForm>({
     resolver: zodResolver(companionProfileSchema),
     defaultValues: {
+      avatar: "",
       city: "",
       dateOfBirth: "",
       bio: "",
@@ -182,16 +189,41 @@ export default function CompanionOnboarding() {
     form.setValue("interests", newInterests);
   };
 
+  const addGalleryImage = () => {
+    if (newGalleryUrl && galleryUrls.length < 6) {
+      try {
+        new URL(newGalleryUrl); // Validate URL
+        const updatedGallery = [...galleryUrls, newGalleryUrl];
+        setGalleryUrls(updatedGallery);
+        form.setValue("gallery", updatedGallery);
+        setNewGalleryUrl("");
+      } catch {
+        toast({
+          title: "Invalid URL",
+          description: "Please enter a valid image URL",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const updatedGallery = galleryUrls.filter((_, i) => i !== index);
+    setGalleryUrls(updatedGallery);
+    form.setValue("gallery", updatedGallery);
+  };
+
   const onSubmit = (data: CompanionProfileForm) => {
     createProfileMutation.mutate(data);
   };
 
   const nextStep = () => {
     const fieldsToValidate: Record<number, (keyof CompanionProfileForm)[]> = {
-      1: ["bio", "dateOfBirth"],
-      2: ["city", "latitude", "longitude"],
-      3: ["services", "languages", "interests"],
-      4: ["hourlyRate"],
+      1: ["avatar", "gallery"],
+      2: ["bio", "dateOfBirth"],
+      3: ["city", "latitude", "longitude"],
+      4: ["services", "languages", "interests"],
+      5: ["hourlyRate"],
     };
 
     const fields = fieldsToValidate[currentStep];
@@ -244,8 +276,106 @@ export default function CompanionOnboarding() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Step 1: Basic Info */}
+              {/* Step 1: Photos */}
               {currentStep === 1 && (
+                <div className="space-y-4">
+                  <h3 className="font-heading text-xl font-semibold mb-4">Add your photos</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="avatar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Profile Picture URL</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="https://example.com/your-photo.jpg"
+                              data-testid="input-avatar"
+                              {...field}
+                            />
+                            {field.value && (
+                              <div className="flex justify-center">
+                                <img 
+                                  src={field.value} 
+                                  alt="Avatar preview" 
+                                  className="h-32 w-32 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/placeholder-profile.jpg";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Enter the URL of your profile picture
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div>
+                    <FormLabel>Gallery Images (1-6 required)</FormLabel>
+                    <div className="space-y-3 mt-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://example.com/gallery-image.jpg"
+                          value={newGalleryUrl}
+                          onChange={(e) => setNewGalleryUrl(e.target.value)}
+                          data-testid="input-gallery-url"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addGalleryImage}
+                          disabled={galleryUrls.length >= 6}
+                          data-testid="button-add-gallery"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {galleryUrls.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {galleryUrls.map((url, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={url}
+                                alt={`Gallery ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/placeholder-profile.jpg";
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6"
+                                onClick={() => removeGalleryImage(index)}
+                                data-testid={`button-remove-gallery-${index}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {galleryUrls.length}/6 images added
+                      </p>
+                      {form.formState.errors.gallery && (
+                        <p className="text-sm text-destructive">{form.formState.errors.gallery.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Basic Info */}
+              {currentStep === 2 && (
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-semibold mb-4">Tell us about yourself</h3>
                   
@@ -291,8 +421,8 @@ export default function CompanionOnboarding() {
                 </div>
               )}
 
-              {/* Step 2: Location */}
-              {currentStep === 2 && (
+              {/* Step 3: Location */}
+              {currentStep === 3 && (
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-semibold mb-4">Where are you located?</h3>
                   
@@ -371,8 +501,8 @@ export default function CompanionOnboarding() {
                 </div>
               )}
 
-              {/* Step 3: Services */}
-              {currentStep === 3 && (
+              {/* Step 4: Services */}
+              {currentStep === 4 && (
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-semibold mb-4">What do you offer?</h3>
                   
@@ -441,8 +571,8 @@ export default function CompanionOnboarding() {
                 </div>
               )}
 
-              {/* Step 4: Pricing */}
-              {currentStep === 4 && (
+              {/* Step 5: Pricing */}
+              {currentStep === 5 && (
                 <div className="space-y-4">
                   <h3 className="font-heading text-xl font-semibold mb-4">Set your hourly rate</h3>
                   
