@@ -162,10 +162,12 @@ Core Tables:
 - Role-based authorization checks
 - Secure payment handling (no client-side secrets)
 - WebSocket authentication:
-  - User existence validation on connection
+  - Session cookie signature verification using cookie-signature
+  - Session store validation to extract authenticated user ID
+  - No client-provided user IDs trusted - all authentication session-based
   - Booking membership verification before message operations
   - Authorization checks prevent cross-booking message access
-  - Error responses for unauthorized attempts
+  - Error responses for all failure cases (missing cookie, invalid signature, expired session, unauthorized access)
 
 ## Recent Changes
 
@@ -211,3 +213,11 @@ Core Tables:
 - Server-side message echo eliminates optimistic update failures
 - Duplicate message detection by ID prevents display issues
 - Companion user ID resolution for proper participant identification
+
+**Security Implementation:**
+- WebSocket connections validate session cookies using cookie-signature library
+- Session signatures verified with SESSION_SECRET before trusting session data
+- Authenticated user ID extracted from validated session (never from client)
+- All message operations check booking membership for authenticated user
+- Prevents impersonation, session hijacking, and cross-booking access
+- Production-ready with comprehensive security validation
