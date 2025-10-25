@@ -20,7 +20,9 @@ import {
   MessageCircle,
   Briefcase,
   X,
-  Banknote
+  Banknote,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface Companion {
@@ -320,28 +322,68 @@ export default function CompanionProfile() {
         </section>
 
         {/* Lightbox */}
-        {lightboxIndex !== null && companion.gallery && (
+        {lightboxIndex !== null && companion.gallery && companion.gallery.length > 0 && (
           <div
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center"
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setLightboxIndex(null)}
             data-testid="lightbox-container"
           >
+            {/* Close Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4"
+              className="absolute top-4 right-4 z-10"
               onClick={() => setLightboxIndex(null)}
               data-testid="button-close-lightbox"
             >
               <X className="h-6 w-6" />
             </Button>
+
+            {/* Previous Button */}
+            {companion.gallery.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex - 1 + companion.gallery!.length) % companion.gallery!.length);
+                }}
+                data-testid="button-prev-lightbox"
+              >
+                <ChevronLeft className="h-8 w-8" />
+              </Button>
+            )}
+
+            {/* Image - Orientation Aware */}
             <img
               src={companion.gallery[lightboxIndex]}
               alt={`Gallery ${lightboxIndex + 1}`}
-              className="max-h-[90vh] max-w-[90vw] object-contain"
+              className="max-h-[85vh] max-w-[85vw] w-auto h-auto object-contain"
               onClick={(e) => e.stopPropagation()}
+              onError={(e) => {
+                e.currentTarget.src = "/placeholder-profile.jpg";
+              }}
             />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-foreground">
+
+            {/* Next Button */}
+            {companion.gallery.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex + 1) % companion.gallery!.length);
+                }}
+                data-testid="button-next-lightbox"
+              >
+                <ChevronRight className="h-8 w-8" />
+              </Button>
+            )}
+
+            {/* Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-foreground bg-background/50 px-4 py-2 rounded-full">
               {lightboxIndex + 1} / {companion.gallery.length}
             </div>
           </div>

@@ -16,11 +16,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   CheckCircle,
   Save,
-  MapPin
+  MapPin,
+  X,
+  Image as ImageIcon,
+  Camera
 } from "lucide-react";
 import { BankAccountSetup } from "@/components/payment/BankAccountSetup";
 
 const companionProfileSchema = z.object({
+  avatar: z.string().url("Please enter a valid image URL").optional(),
   city: z.string().min(2, "City is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   bio: z.string().min(50, "Bio must be at least 50 characters").max(500, "Bio must be less than 500 characters"),
@@ -30,6 +34,7 @@ const companionProfileSchema = z.object({
   hourlyRate: z.string().min(1, "Hourly rate is required"),
   latitude: z.string().min(1, "Latitude is required"),
   longitude: z.string().min(1, "Longitude is required"),
+  gallery: z.array(z.string().url("Each gallery image must be a valid URL")).min(1, "Add at least 1 gallery image").max(6, "Maximum 6 gallery images allowed"),
 });
 
 type CompanionProfileForm = z.infer<typeof companionProfileSchema>;
@@ -79,6 +84,8 @@ export default function EditProfile() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [isCalculatingLocation, setIsCalculatingLocation] = useState(false);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [newGalleryUrl, setNewGalleryUrl] = useState("");
 
   const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
   const { data: profile, isLoading } = useQuery<any>({ queryKey: ["/api/companion/profile"] });
@@ -86,6 +93,7 @@ export default function EditProfile() {
   const form = useForm<CompanionProfileForm>({
     resolver: zodResolver(companionProfileSchema),
     values: profile ? {
+      avatar: profile.avatar || "",
       city: profile.city || "",
       dateOfBirth: profile.dateOfBirth || "",
       bio: profile.bio || "",
@@ -95,6 +103,7 @@ export default function EditProfile() {
       hourlyRate: profile.hourlyRate || "",
       latitude: profile.latitude || "",
       longitude: profile.longitude || "",
+      gallery: profile.gallery || [],
     } : undefined,
   });
 
@@ -104,7 +113,9 @@ export default function EditProfile() {
       setSelectedServices(profile.services || []);
       setSelectedLanguages(profile.languages || []);
       setSelectedInterests(profile.interests || []);
+      setGalleryUrls(profile.gallery || []);
       form.reset({
+        avatar: profile.avatar || "",
         city: profile.city || "",
         dateOfBirth: profile.dateOfBirth || "",
         bio: profile.bio || "",
@@ -114,6 +125,7 @@ export default function EditProfile() {
         hourlyRate: profile.hourlyRate || "",
         latitude: profile.latitude || "",
         longitude: profile.longitude || "",
+        gallery: profile.gallery || [],
       });
     }
   }, [profile]);
@@ -162,6 +174,30 @@ export default function EditProfile() {
       : [...selectedInterests, interest];
     setSelectedInterests(newInterests);
     form.setValue("interests", newInterests);
+  };
+
+  const addGalleryImage = () => {
+    if (newGalleryUrl && galleryUrls.length < 6) {
+      try {
+        new URL(newGalleryUrl); // Validate URL
+        const updatedGallery = [...galleryUrls, newGalleryUrl];
+        setGalleryUrls(updatedGallery);
+        form.setValue("gallery", updatedGallery);
+        setNewGalleryUrl("");
+      } catch {
+        toast({
+          title: "Invalid URL",
+          description: "Please enter a valid image URL",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const updatedGallery = galleryUrls.filter((_, i) => i !== index);
+    setGalleryUrls(updatedGallery);
+    form.setValue("gallery", updatedGallery);
   };
 
   const calculateLocation = () => {
@@ -251,6 +287,104 @@ export default function EditProfile() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Photos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="avatar"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Profile Picture URL</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="https://example.com/your-photo.jpg"
+                              data-testid="input-avatar"
+                              {...field}
+                            />
+                            {field.value && (
+                              <div className="flex justify-center">
+                                <img 
+                                  src={field.value} 
+                                  alt="Avatar preview" 
+                                  className="h-32 w-32 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/placeholder-profile.jpg";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Enter the URL of your profile picture
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div>
+                    <FormLabel>Gallery Images (1-6 required)</FormLabel>
+                    <div className="space-y-3 mt-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://example.com/gallery-image.jpg"
+                          value={newGalleryUrl}
+                          onChange={(e) => setNewGalleryUrl(e.target.value)}
+                          data-testid="input-gallery-url"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addGalleryImage}
+                          disabled={galleryUrls.length >= 6}
+                          data-testid="button-add-gallery"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {galleryUrls.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {galleryUrls.map((url, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={url}
+                                alt={`Gallery ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/placeholder-profile.jpg";
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6"
+                                onClick={() => removeGalleryImage(index)}
+                                data-testid={`button-remove-gallery-${index}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {galleryUrls.length}/6 images added
+                      </p>
+                      {form.formState.errors.gallery && (
+                        <p className="text-sm text-destructive">{form.formState.errors.gallery.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Basic Information</CardTitle>
