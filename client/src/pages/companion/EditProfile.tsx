@@ -36,7 +36,7 @@ const companionProfileSchema = z.object({
   hourlyRate: z.string().min(1, "Hourly rate is required"),
   latitude: z.string().min(1, "Latitude is required"),
   longitude: z.string().min(1, "Longitude is required"),
-  gallery: z.array(z.string().min(1)).min(1, "Add at least 1 gallery image").max(6, "Maximum 6 gallery images allowed"),
+  gallery: z.array(z.string().min(1)).max(6, "Maximum 6 gallery images allowed").optional(),
 });
 
 type CompanionProfileForm = z.infer<typeof companionProfileSchema>;
@@ -430,7 +430,7 @@ export default function EditProfile() {
                   />
 
                   <div>
-                    <FormLabel>Gallery Images (1-6 required)</FormLabel>
+                    <FormLabel>Gallery Images (0-6 optional)</FormLabel>
                     <div className="space-y-3 mt-2">
                       <div className="flex gap-2">
                         <Input
