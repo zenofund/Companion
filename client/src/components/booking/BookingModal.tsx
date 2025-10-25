@@ -57,13 +57,14 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
 
   const bookingMutation = useMutation({
     mutationFn: async (data: BookingForm) => {
+      // Combine date and time into a proper Date object
+      const [timeHours, timeMinutes] = selectedTime.split(":");
       const bookingDateTime = new Date(data.bookingDate);
-      const [h, m] = selectedTime.split(":");
-      bookingDateTime.setHours(parseInt(h), parseInt(m));
+      bookingDateTime.setHours(parseInt(timeHours), parseInt(timeMinutes), 0, 0);
 
       return await apiRequest("POST", "/api/bookings", {
         companionId: companion.id,
-        bookingDate: bookingDateTime.toISOString(),
+        bookingDate: bookingDateTime,
         hours: data.hours,
         meetingLocation: data.meetingLocation,
         specialRequests: data.specialRequests,

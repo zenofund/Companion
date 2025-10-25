@@ -569,7 +569,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const data = insertBookingSchema.parse(req.body);
+      // Validate request body (excluding clientId which comes from session)
+      const bookingDataSchema = insertBookingSchema.omit({ clientId: true });
+      const data = bookingDataSchema.parse(req.body);
 
       // Get companion details
       const companion = await storage.getCompanion(data.companionId);

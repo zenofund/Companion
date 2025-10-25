@@ -10,11 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 25, 2025 - Date Picker Redesign**
-- Completely redesigned booking date picker with native HTML5 date input
-- Removed complex popover/calendar component in favor of simpler, more reliable solution
-- Date and time now side-by-side in a clean grid layout
-- Automatic min/max date validation (today to 90 days ahead)
+**October 25, 2025 - Booking Payment Fix & Date Picker Redesign**
+- Fixed critical booking payment error by correcting backend validation schema (removed clientId requirement from request body)
+- Fixed date/time submission to properly convert native HTML date input to Date object before sending to API
+- Completely redesigned booking date picker with native HTML5 date input for better reliability
+- Date and time now side-by-side in a clean grid layout with automatic min/max validation (today to 90 days ahead)
 - Works perfectly on all devices with native OS date pickers
 
 **October 25, 2025 - Authentication & Mobile UX Fixes**
