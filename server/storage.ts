@@ -275,7 +275,7 @@ export class DatabaseStorage implements IStorage {
 
     // Average rating
     const ratingsResult = await db
-      .select({ rating: ratings.rating })
+      .select({ rating: ratings.companionRating })
       .from(ratings)
       .leftJoin(bookings, eq(ratings.bookingId, bookings.id))
       .where(eq(bookings.companionId, companionId));
