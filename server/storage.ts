@@ -40,7 +40,7 @@ export interface IStorage {
 
   // Bookings
   getBooking(id: string): Promise<Booking | undefined>;
-  createBooking(booking: InsertBooking): Promise<Booking>;
+  createBooking(booking: InsertBooking & { requestExpiresAt?: Date }): Promise<Booking>;
   updateBooking(id: string, updates: Partial<Booking>): Promise<Booking>;
   getClientBookings(clientId: string): Promise<Booking[]>;
   getCompanionBookings(companionId: string): Promise<Booking[]>;
@@ -140,7 +140,7 @@ export class DatabaseStorage implements IStorage {
     return booking || undefined;
   }
 
-  async createBooking(insertBooking: InsertBooking): Promise<Booking> {
+  async createBooking(insertBooking: InsertBooking & { requestExpiresAt?: Date }): Promise<Booking> {
     const [booking] = await db.insert(bookings).values(insertBooking).returning();
     return booking;
   }

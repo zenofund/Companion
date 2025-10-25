@@ -42,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const data = JSON.parse(message.toString());
 
-        if (data.type === 'auth') {
+        if (data.type === 'auth' && data.userId) {
           userId = data.userId;
           if (!clients.has(userId)) {
             clients.set(userId, new Set());
@@ -384,8 +384,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
       const booking = await storage.createBooking({
-        ...data,
         clientId: req.session.user.id,
+        companionId: data.companionId,
+        bookingDate: data.bookingDate,
+        hours: data.hours,
+        meetingLocation: data.meetingLocation,
+        totalAmount: data.totalAmount,
+        specialRequests: data.specialRequests,
         requestExpiresAt,
       });
 
