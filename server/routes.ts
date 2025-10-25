@@ -710,6 +710,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== PAYMENT ROUTES ==========
 
+  // Paystack callback - redirects user back to app after payment
+  app.get("/payment/callback", async (req, res) => {
+    const reference = req.query.reference as string;
+
+    if (!reference) {
+      return res.redirect("/?payment=error");
+    }
+
+    try {
+      const verification = await verifyPayment(reference);
+
+      if (verification.status === "success") {
+        const payment = await storage.getPaymentByBooking(verification.metadata.bookingId);
+        if (payment) {
+          await storage.updatePayment(payment.id, {
+            status: "paid",
+          });
+
+          const booking = await storage.getBooking(verification.metadata.bookingId);
+          if (booking && booking.status !== "rejected") {
+            await storage.updateBooking(verification.metadata.bookingId, {
+              status: "accepted",
+            });
+          }
+        }
+
+        // Redirect to client dashboard with success message
+        return res.redirect("/client-dashboard?payment=success");
+      } else {
+        return res.redirect("/client-dashboard?payment=failed");
+      }
+    } catch (error: any) {
+      console.error("Payment callback error:", error);
+      return res.redirect("/client-dashboard?payment=error");
+    }
+  });
+
   app.get("/api/payment/verify/:reference", async (req, res) => {
     try {
       const verification = await verifyPayment(req.params.reference);

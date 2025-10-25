@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,11 +11,14 @@ import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, Lis
 import { format } from "date-fns";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { MapView } from "@/components/map/MapView";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ClientDashboard() {
   const [browseViewMode, setBrowseViewMode] = useState<"list" | "map">("list");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
   const { data: bookings } = useQuery({ queryKey: ["/api/bookings/client"] });
@@ -22,6 +26,35 @@ export default function ClientDashboard() {
 
   const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];
   const completedBookings = bookings?.filter((b: any) => b.status === "completed") || [];
+
+  // Check for payment status on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get("payment");
+
+    if (paymentStatus === "success") {
+      toast({
+        title: "Payment successful!",
+        description: "Your booking has been confirmed. The companion will be notified.",
+      });
+      // Clear the query parameter
+      setLocation("/client-dashboard");
+    } else if (paymentStatus === "failed") {
+      toast({
+        title: "Payment failed",
+        description: "Your payment could not be processed. Please try again.",
+        variant: "destructive",
+      });
+      setLocation("/client-dashboard");
+    } else if (paymentStatus === "error") {
+      toast({
+        title: "Payment error",
+        description: "An error occurred while processing your payment.",
+        variant: "destructive",
+      });
+      setLocation("/client-dashboard");
+    }
+  }, [toast, setLocation]);
 
   // Get user's geolocation for browse tab
   useEffect(() => {
