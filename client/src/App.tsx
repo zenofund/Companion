@@ -13,6 +13,7 @@ import CompanionDashboard from "@/pages/dashboard/CompanionDashboard";
 import AdminDashboard from "@/pages/dashboard/AdminDashboard";
 import CompanionOnboarding from "@/pages/onboarding/CompanionOnboarding";
 import EditProfile from "@/pages/companion/EditProfile";
+import BookingChat from "@/pages/BookingChat";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/onboarding/companion" component={CompanionOnboarding} />
       <Route path="/companion/edit-profile" component={EditProfile} />
+      <Route path="/booking/:id/chat" component={BookingChat} />
       <Route path="/dashboard/client" component={ClientDashboard} />
       <Route path="/dashboard/companion" component={CompanionDashboard} />
       <Route path="/dashboard/admin" component={AdminDashboard} />
