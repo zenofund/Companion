@@ -67,9 +67,9 @@ export default function Login() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/attached_assets/fliQ_logo_1761347377488.png" 
+              src="/logo.png" 
               alt="fliQ" 
-              className="h-12"
+              className="h-12 w-auto max-w-full object-contain"
             />
           </div>
           <CardTitle className="text-2xl font-heading">Welcome Back</CardTitle>
