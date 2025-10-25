@@ -114,7 +114,7 @@ export default function CompanionDashboard() {
     <div className="min-h-screen bg-background">
       <Header user={user} onProfileClick={() => setIsProfileModalOpen(true)} />
       
-      <main className="pt-16 container mx-auto px-4 py-8">
+      <main className="pt-28 container mx-auto px-4 py-8">
         {/* Header with Availability Toggle */}
         <div className="flex items-center justify-between mb-8">
           <div>

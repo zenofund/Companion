@@ -207,7 +207,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-background">
         <Header user={user} />
-        <main className="pt-16 container mx-auto px-4 py-8">
+        <main className="pt-28 container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-[60vh]">
             <div className="text-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-background">
         <Header user={user} />
-        <main className="pt-16 container mx-auto px-4 py-8">
+        <main className="pt-28 container mx-auto px-4 py-8">
           <Card>
             <CardContent className="p-12 text-center">
               <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { MapPin, List, Bell, Menu, User, LogOut, UserCircle } from "lucide-react";
+import { MapPin, List, Bell, Menu, User, LogOut, UserCircle, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/components/providers/ThemeProvider";
 
 interface HeaderProps {
   user?: {
@@ -32,6 +33,7 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
   const [location, setLocation] = useLocation();
   const isHomePage = location === "/";
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -102,6 +104,21 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
 
           {/* Right Side - User Actions */}
           <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              data-testid="button-theme-toggle"
+              className="hover-elevate"
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
+            </Button>
+
             {user ? (
               <>
                 {/* Notifications */}

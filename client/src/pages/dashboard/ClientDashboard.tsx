@@ -99,7 +99,7 @@ export default function ClientDashboard() {
     <div className="min-h-screen bg-background">
       <Header user={user} />
       
-      <main className="pt-16 container mx-auto px-4 py-8">
+      <main className="pt-28 container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold mb-2" data-testid="text-welcome">

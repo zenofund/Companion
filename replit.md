@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025 - Dark Mode & Spacing Improvements**
+- Implemented comprehensive dark mode theme with ThemeProvider component
+- Added theme toggle button (sun/moon icon) in navigation header
+- Theme persists to localStorage and respects system preferences as default
+- All components automatically adapt via existing CSS color variables with excellent contrast
+- Increased dashboard spacing from 64px to 112px top margin for better visual separation from header
+
 **October 25, 2025 - Production Authentication Fix**
 - Fixed critical production authentication bug by adding `trust proxy` setting to Express
 - This enables proper HTTPS detection when deployed behind reverse proxies (Replit infrastructure)
