@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025 - Authentication & Mobile UX Fixes**
+- Fixed critical authentication bug where users appeared logged out when viewing companion profiles
+- Added proper user prop passing to Header component across all CompanionProfile page states
+- Redesigned CompanionCard mobile layout to single-column stacked format with icons beside values
+- Stats now display horizontally (icon + value) and stack vertically on mobile for better readability
+- Companion names now properly truncate on small screens to prevent overflow
+- Improved responsive text sizing and spacing for mobile devices
+
 **October 25, 2025 - Booking UX & Mobile Improvements**
 - Fixed date picker in booking modal to properly update form field when date is selected
 - Made companion cards fully mobile-responsive with 4-column grid layout

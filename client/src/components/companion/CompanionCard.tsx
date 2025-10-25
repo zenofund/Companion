@@ -74,7 +74,7 @@ export function CompanionCard({ companion, distance }: CompanionCardProps) {
         {/* Name and Verification */}
         <div className="flex items-center gap-2 mb-3">
           <h3 
-            className="font-heading text-lg sm:text-xl font-semibold line-clamp-1"
+            className="font-heading text-base sm:text-xl font-semibold truncate flex-1"
             data-testid={`text-name-${companion.id}`}
           >
             {companion.name || "Anonymous"}
@@ -82,35 +82,35 @@ export function CompanionCard({ companion, distance }: CompanionCardProps) {
           <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" data-testid={`icon-verified-${companion.id}`} />
         </div>
 
-        {/* Stats Grid - Responsive with icons only on mobile */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        {/* Stats - Stacked on mobile, horizontal on larger screens */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 mb-4 text-sm">
           {/* Rate */}
-          <div className="flex flex-col items-center justify-center" data-testid={`text-rate-${companion.id}`}>
-            <Banknote className="h-4 w-4 text-muted-foreground mb-1" />
-            <span className="text-xs font-medium text-center">₦{companion.hourlyRate || "0"}</span>
+          <div className="flex items-center gap-2" data-testid={`text-rate-${companion.id}`}>
+            <Banknote className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="font-medium">₦{companion.hourlyRate || "0"}/hr</span>
           </div>
           
           {/* City */}
           {companion.city && (
-            <div className="flex flex-col items-center justify-center" data-testid={`text-city-${companion.id}`}>
-              <MapPin className="h-4 w-4 text-muted-foreground mb-1" />
-              <span className="text-xs text-center line-clamp-1">{companion.city}</span>
+            <div className="flex items-center gap-2" data-testid={`text-city-${companion.id}`}>
+              <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="truncate">{companion.city}</span>
             </div>
           )}
           
           {/* Age */}
           {age && (
-            <div className="flex flex-col items-center justify-center" data-testid={`text-age-${companion.id}`}>
-              <Clock className="h-4 w-4 text-muted-foreground mb-1" />
-              <span className="text-xs text-center">{age} yrs</span>
+            <div className="flex items-center gap-2" data-testid={`text-age-${companion.id}`}>
+              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>{age} yrs</span>
             </div>
           )}
           
           {/* Rating */}
           {companion.averageRating && (
-            <div className="flex flex-col items-center justify-center" data-testid={`text-rating-${companion.id}`}>
-              <Star className="h-4 w-4 text-muted-foreground mb-1" />
-              <span className="text-xs text-center">{parseFloat(companion.averageRating).toFixed(1)}</span>
+            <div className="flex items-center gap-2" data-testid={`text-rating-${companion.id}`}>
+              <Star className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>{parseFloat(companion.averageRating).toFixed(1)}</span>
             </div>
           )}
         </div>

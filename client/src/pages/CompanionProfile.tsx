@@ -46,13 +46,20 @@ interface Companion {
   moderationStatus?: string;
 }
 
+interface User {
+  id: string;
+  name?: string;
+  avatar?: string;
+  role: string;
+}
+
 export default function CompanionProfile() {
   const [, params] = useRoute("/companion/:id");
   const [, setLocation] = useLocation();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const { data: user, isLoading: userLoading } = useQuery({ queryKey: ["/api/auth/me"] });
+  const { data: user, isLoading: userLoading } = useQuery<User>({ queryKey: ["/api/auth/me"] });
   const { data: companion, isLoading} = useQuery<Companion>({
     queryKey: ["/api/companions", params?.id],
     enabled: !!params?.id,
@@ -76,7 +83,7 @@ export default function CompanionProfile() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header user={user} />
         <div className="pt-16 container mx-auto px-4 py-8">
           <div className="h-96 bg-muted animate-pulse rounded-lg" />
         </div>
@@ -87,7 +94,7 @@ export default function CompanionProfile() {
   if (!companion) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header user={user} />
         <div className="pt-16 container mx-auto px-4 py-8 text-center">
           <p className="text-lg text-muted-foreground">Companion not found</p>
         </div>
@@ -100,7 +107,7 @@ export default function CompanionProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header user={user} />
       
       <main className="pt-16">
         {/* Hero Section */}
