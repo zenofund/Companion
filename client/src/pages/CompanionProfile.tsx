@@ -22,12 +22,33 @@ import {
   X
 } from "lucide-react";
 
+interface Companion {
+  id: string;
+  userId: string;
+  name?: string;
+  avatar?: string;
+  city?: string;
+  dateOfBirth?: string;
+  bio?: string;
+  services?: string[];
+  interests?: string[];
+  languages?: string[];
+  hourlyRate?: string;
+  latitude?: string;
+  longitude?: string;
+  gallery?: string[];
+  isAvailable?: boolean;
+  averageRating?: string;
+  totalBookings?: number;
+  moderationStatus?: string;
+}
+
 export default function CompanionProfile() {
   const [, params] = useRoute("/companion/:id");
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const { data: companion, isLoading } = useQuery({
+  const { data: companion, isLoading} = useQuery<Companion>({
     queryKey: ["/api/companions", params?.id],
     enabled: !!params?.id,
   });
