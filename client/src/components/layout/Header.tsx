@@ -1,8 +1,19 @@
 import { Link, useLocation } from "wouter";
-import { MapPin, List, Bell, Menu, User } from "lucide-react";
+import { MapPin, List, Bell, Menu, User, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   user?: {
@@ -14,11 +25,38 @@ interface HeaderProps {
   viewMode?: "map" | "list";
   onViewModeChange?: (mode: "map" | "list") => void;
   notificationCount?: number;
+  onProfileClick?: () => void;
 }
 
-export function Header({ user, viewMode, onViewModeChange, notificationCount = 0 }: HeaderProps) {
-  const [location] = useLocation();
+export function Header({ user, viewMode, onViewModeChange, notificationCount = 0, onProfileClick }: HeaderProps) {
+  const [location, setLocation] = useLocation();
   const isHomePage = location === "/";
+  const { toast } = useToast();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/auth/logout");
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      setLocation("/");
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   return (
     <header 
@@ -85,16 +123,57 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
                 </Button>
 
                 {/* User Menu */}
-                <Avatar 
-                  className="h-9 w-9 hover-elevate cursor-pointer border-2 border-primary/20"
-                  onClick={() => window.location.href = `/dashboard/${user.role}`}
-                  data-testid="link-dashboard"
-                >
-                  <AvatarImage src={user.avatar} alt={user.name || "User"} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar 
+                      className="h-9 w-9 hover-elevate cursor-pointer border-2 border-primary/20"
+                      data-testid="button-user-menu"
+                    >
+                      <AvatarImage src={user.avatar} alt={user.name || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user.name || "User"}</p>
+                        <p className="text-xs leading-none text-muted-foreground capitalize">{user.role}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link 
+                        href={`/dashboard/${user.role}`}
+                        className="cursor-pointer"
+                        data-testid="link-dashboard"
+                      >
+                        <UserCircle className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    {onProfileClick && (
+                      <DropdownMenuItem 
+                        onClick={onProfileClick}
+                        data-testid="button-profile"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Profile
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleLogout}
+                      disabled={logoutMutation.isPending}
+                      data-testid="button-logout"
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>

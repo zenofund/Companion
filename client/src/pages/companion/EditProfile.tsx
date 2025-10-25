@@ -19,12 +19,14 @@ import {
   MapPin,
   X,
   Image as ImageIcon,
-  Camera
+  Camera,
+  Upload
 } from "lucide-react";
 import { BankAccountSetup } from "@/components/payment/BankAccountSetup";
+import { fileToBase64, validateImageFile } from "@/lib/imageUtils";
 
 const companionProfileSchema = z.object({
-  avatar: z.string().url("Please enter a valid image URL").optional(),
+  avatar: z.string().min(1, "Avatar is required").optional(),
   city: z.string().min(2, "City is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   bio: z.string().min(50, "Bio must be at least 50 characters").max(500, "Bio must be less than 500 characters"),
@@ -34,7 +36,7 @@ const companionProfileSchema = z.object({
   hourlyRate: z.string().min(1, "Hourly rate is required"),
   latitude: z.string().min(1, "Latitude is required"),
   longitude: z.string().min(1, "Longitude is required"),
-  gallery: z.array(z.string().url("Each gallery image must be a valid URL")).min(1, "Add at least 1 gallery image").max(6, "Maximum 6 gallery images allowed"),
+  gallery: z.array(z.string().min(1)).min(1, "Add at least 1 gallery image").max(6, "Maximum 6 gallery images allowed"),
 });
 
 type CompanionProfileForm = z.infer<typeof companionProfileSchema>;
@@ -176,22 +178,87 @@ export default function EditProfile() {
     form.setValue("interests", newInterests);
   };
 
-  const addGalleryImage = () => {
-    if (newGalleryUrl && galleryUrls.length < 6) {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast({
+        title: "Invalid image",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const base64 = await fileToBase64(file);
+      form.setValue("avatar", base64);
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to process image",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = 6 - galleryUrls.length;
+    if (files.length > remainingSlots) {
+      toast({
+        title: "Too many images",
+        description: `You can only add ${remainingSlots} more image(s)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newImages: string[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const validation = validateImageFile(file);
+
+      if (!validation.valid) {
+        errors.push(`File ${i + 1}: ${validation.error}`);
+        continue;
+      }
+
       try {
-        new URL(newGalleryUrl); // Validate URL
-        const updatedGallery = [...galleryUrls, newGalleryUrl];
-        setGalleryUrls(updatedGallery);
-        form.setValue("gallery", updatedGallery);
-        setNewGalleryUrl("");
-      } catch {
-        toast({
-          title: "Invalid URL",
-          description: "Please enter a valid image URL",
-          variant: "destructive",
-        });
+        const base64 = await fileToBase64(file);
+        newImages.push(base64);
+      } catch (error) {
+        errors.push(`Failed to process file ${i + 1}`);
       }
     }
+
+    if (errors.length > 0) {
+      toast({
+        title: "Some files failed",
+        description: errors.join(", "),
+        variant: "destructive",
+      });
+    }
+
+    if (newImages.length > 0) {
+      const updatedGallery = [...galleryUrls, ...newImages];
+      setGalleryUrls(updatedGallery);
+      form.setValue("gallery", updatedGallery);
+      
+      toast({
+        title: "Images uploaded",
+        description: `${newImages.length} image(s) added successfully`,
+      });
+    }
+
+    // Reset input
+    e.target.value = "";
   };
 
   const removeGalleryImage = (index: number) => {
@@ -297,20 +364,49 @@ export default function EditProfile() {
                     name="avatar"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Profile Picture URL</FormLabel>
+                        <FormLabel>Profile Picture</FormLabel>
                         <FormControl>
-                          <div className="space-y-2">
-                            <Input
-                              placeholder="https://example.com/your-photo.jpg"
-                              data-testid="input-avatar"
-                              {...field}
-                            />
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarUpload}
+                                className="hidden"
+                                id="avatar-upload"
+                                data-testid="input-avatar-file"
+                              />
+                              <label htmlFor="avatar-upload">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="cursor-pointer"
+                                  asChild
+                                >
+                                  <span>
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Choose Photo
+                                  </span>
+                                </Button>
+                              </label>
+                              {field.value && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => form.setValue("avatar", "")}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
                             {field.value && (
                               <div className="flex justify-center">
                                 <img 
                                   src={field.value} 
                                   alt="Avatar preview" 
-                                  className="h-32 w-32 rounded-full object-cover"
+                                  className="h-32 w-32 rounded-full object-cover border-4 border-border"
                                   onError={(e) => {
                                     e.currentTarget.src = "/placeholder-profile.jpg";
                                   }}
@@ -320,7 +416,7 @@ export default function EditProfile() {
                           </div>
                         </FormControl>
                         <FormDescription>
-                          Enter the URL of your profile picture
+                          Upload a profile picture (JPEG, PNG, WebP, or GIF, max 5MB)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -332,20 +428,28 @@ export default function EditProfile() {
                     <div className="space-y-3 mt-2">
                       <div className="flex gap-2">
                         <Input
-                          placeholder="https://example.com/gallery-image.jpg"
-                          value={newGalleryUrl}
-                          onChange={(e) => setNewGalleryUrl(e.target.value)}
-                          data-testid="input-gallery-url"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleGalleryUpload}
+                          className="hidden"
+                          id="gallery-upload"
+                          data-testid="input-gallery-file"
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={addGalleryImage}
-                          disabled={galleryUrls.length >= 6}
-                          data-testid="button-add-gallery"
-                        >
-                          <ImageIcon className="h-4 w-4" />
-                        </Button>
+                        <label htmlFor="gallery-upload" className="flex-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full cursor-pointer"
+                            disabled={galleryUrls.length >= 6}
+                            asChild
+                          >
+                            <span>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Upload Images {galleryUrls.length >= 6 ? "(Max reached)" : ""}
+                            </span>
+                          </Button>
+                        </label>
                       </div>
                       
                       {galleryUrls.length > 0 && (

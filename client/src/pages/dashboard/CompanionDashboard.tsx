@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
+import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -45,6 +46,7 @@ interface PendingBooking {
 export default function CompanionDashboard() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
   const { data: profile } = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
   const { data: pendingRequests } = useQuery<PendingBooking[]>({ queryKey: ["/api/bookings/pending"] });
@@ -109,7 +111,7 @@ export default function CompanionDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header user={user} />
+      <Header user={user} onProfileClick={() => setIsProfileModalOpen(true)} />
       
       <main className="pt-16 container mx-auto px-4 py-8">
         {/* Header with Availability Toggle */}
@@ -154,7 +156,7 @@ export default function CompanionDashboard() {
                 <Button 
                   variant="default" 
                   size="sm"
-                  onClick={() => setLocation(profile ? "/companion/edit-profile" : "/onboarding/companion")}
+                  onClick={() => profile ? setIsProfileModalOpen(true) : setLocation("/onboarding/companion")}
                   data-testid="button-complete-profile"
                 >
                   {profile ? "Edit Profile" : "Complete Profile"}
@@ -319,6 +321,19 @@ export default function CompanionDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Profile Modal */}
+      <Modal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        title="Edit Profile"
+      >
+        <iframe
+          src="/companion/edit-profile"
+          className="w-full h-[70vh] border-0"
+          title="Edit Profile"
+        />
+      </Modal>
     </div>
   );
 }
