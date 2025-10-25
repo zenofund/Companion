@@ -66,11 +66,13 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <img 
-              src="/logo.png" 
-              alt="fliQ" 
-              className="h-12 w-auto max-w-full object-contain"
-            />
+            <Link href="/">
+              <img 
+                src="/logo.png" 
+                alt="fliQ" 
+                className="h-12 w-auto max-w-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            </Link>
           </div>
           <CardTitle className="text-2xl font-heading">Welcome Back</CardTitle>
           <CardDescription>Sign in to your fliQ account</CardDescription>
