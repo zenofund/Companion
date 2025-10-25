@@ -54,11 +54,12 @@ export default function CompanionDashboard() {
     mutationFn: async (isAvailable: boolean) => {
       return await apiRequest("PATCH", "/api/companion/availability", { isAvailable });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/companion"] });
       toast({
         title: "Availability updated",
-        description: profile?.isAvailable ? "You are now offline" : "You are now available",
+        description: variables ? "You are now available" : "You are now offline",
       });
     },
   });
@@ -67,11 +68,14 @@ export default function CompanionDashboard() {
     mutationFn: async ({ bookingId, action }: { bookingId: string; action: "accept" | "reject" }) => {
       return await apiRequest("POST", `/api/bookings/${bookingId}/${action}`, {});
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/companion"] });
       toast({
         title: "Booking updated",
-        description: "The booking request has been processed",
+        description: variables.action === "accept" 
+          ? "Booking accepted successfully" 
+          : "Booking declined",
       });
     },
   });
@@ -82,21 +86,23 @@ export default function CompanionDashboard() {
     return minutes > 0 ? `${minutes}m remaining` : "Expired";
   };
 
-  // Calculate profile completion based on filled fields
+  // Calculate profile completion based on filled fields (onboarding requirements)
   const profileCompletion = useMemo(() => {
     if (!profile) return 0;
     
     let completed = 0;
-    const totalFields = 8;
+    const totalFields = 10;
     
     if (profile.bio) completed++;
     if (profile.city) completed++;
-    if (profile.hourlyRate) completed++;
+    if (profile.hourlyRate && profile.hourlyRate > 0) completed++;
     if (profile.services && profile.services.length > 0) completed++;
     if (profile.interests && profile.interests.length > 0) completed++;
     if (profile.languages && profile.languages.length > 0) completed++;
     if (profile.gallery && profile.gallery.length > 0) completed++;
     if (profile.bankAccountNumber) completed++;
+    if (profile.paystackSubaccountCode) completed++; // Banking setup
+    if (profile.verificationStatus === "approved") completed++; // Admin verification
     
     return Math.round((completed / totalFields) * 100);
   }, [profile]);
