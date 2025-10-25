@@ -13,6 +13,7 @@ import {
 import bcrypt from "bcryptjs";
 import cookie from "cookie";
 import signature from "cookie-signature";
+import { z } from "zod";
 import { insertUserSchema, insertCompanionSchema, insertBookingSchema } from "@shared/schema";
 import { SESSION_SECRET, sessionStore } from "./index";
 
@@ -569,9 +570,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Validate request body (excluding clientId which comes from session)
-      const bookingDataSchema = insertBookingSchema.omit({ clientId: true });
-      const data = bookingDataSchema.parse(req.body);
+      // Custom validation schema for request body
+      const requestSchema = z.object({
+        companionId: z.string(),
+        bookingDate: z.string().transform((val) => new Date(val)),
+        hours: z.number().min(1).max(24),
+        meetingLocation: z.string().min(5),
+        specialRequests: z.string().optional(),
+        totalAmount: z.string(),
+      });
+
+      const data = requestSchema.parse(req.body);
 
       // Get companion details
       const companion = await storage.getCompanion(data.companionId);
