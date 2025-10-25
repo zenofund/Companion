@@ -35,20 +35,31 @@ async function paystackRequest<T = any>(
 export async function initializePayment(
   email: string,
   amount: number,
-  metadata: any
+  metadata: any,
+  subaccountCode?: string,
+  transactionCharge?: number
 ): Promise<{ authorization_url: string; reference: string }> {
   const reference = `fliq_${randomUUID()}`;
 
-  const response = await paystackRequest<{
-    authorization_url: string;
-    reference: string;
-  }>("POST", "/transaction/initialize", {
+  const payload: any = {
     email,
     amount: Math.round(amount * 100), // Convert to kobo/cents
     reference,
     metadata,
     callback_url: `${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/payment/callback`,
-  });
+  };
+
+  // Add split payment if subaccount is provided
+  if (subaccountCode) {
+    payload.subaccount = subaccountCode;
+    payload.transaction_charge = transactionCharge ? Math.round(transactionCharge * 100) : undefined;
+    payload.bearer = "account"; // Platform bears the transaction fee
+  }
+
+  const response = await paystackRequest<{
+    authorization_url: string;
+    reference: string;
+  }>("POST", "/transaction/initialize", payload);
 
   return response.data;
 }
@@ -112,4 +123,22 @@ export async function getBanks(): Promise<
   );
 
   return response.data;
+}
+
+export function calculateSplitAmounts(
+  totalAmount: number,
+  platformPercentage: number = 20
+): {
+  totalAmount: number;
+  platformFee: number;
+  companionEarning: number;
+} {
+  const platformFee = Math.round((totalAmount * platformPercentage) / 100);
+  const companionEarning = totalAmount - platformFee;
+
+  return {
+    totalAmount,
+    platformFee,
+    companionEarning,
+  };
 }
