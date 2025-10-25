@@ -10,6 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025 - Logo Mobile Fix**
+- Fixed logo in header to resize proportionately on mobile devices
+- Logo now uses responsive height (smaller on mobile, larger on desktop)
+- Added `w-auto object-contain` to maintain aspect ratio and prevent stretching
+- Mobile logo is 32px height, desktop is 40px height with automatic width scaling
+
 **October 25, 2025 - Booking Payment Fix & Complete Flow**
 - Redesigned booking modal with simple native HTML5 date and time inputs
 - Uses device's built-in calendar picker for clean, reliable date selection

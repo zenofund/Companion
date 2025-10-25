@@ -72,7 +72,7 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
             <img 
               src="/logo.png" 
               alt="fliQ" 
-              className="h-10"
+              className="h-8 sm:h-10 w-auto object-contain"
             />
           </Link>
 
