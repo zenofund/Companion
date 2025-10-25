@@ -114,13 +114,13 @@ export default function Landing() {
           {/* Hero Content */}
           <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
             <h1 
-              className="font-heading text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-foreground"
+              className="font-heading text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-foreground leading-tight"
               data-testid="text-hero-title"
             >
               Find Your Perfect Companion
             </h1>
             <p 
-              className="text-xl md:text-2xl text-muted-foreground mb-8"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 leading-relaxed"
               data-testid="text-hero-subtitle"
             >
               Discover and book professional companions near you with real-time availability
