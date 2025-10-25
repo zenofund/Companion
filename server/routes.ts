@@ -570,6 +570,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      console.log("Received booking request body:", JSON.stringify(req.body, null, 2));
+      
       // Custom validation schema for request body
       const requestSchema = z.object({
         companionId: z.string(),
@@ -581,6 +583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const data = requestSchema.parse(req.body);
+      console.log("Parsed data:", { ...data, bookingDate: data.bookingDate.toISOString() });
 
       // Get companion details
       const companion = await storage.getCompanion(data.companionId);
