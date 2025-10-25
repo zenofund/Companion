@@ -281,3 +281,67 @@ Core Tables:
 - Mutation buttons disabled during pending requests
 - Form validation prevents invalid platform fee values
 - Production-ready with comprehensive error handling
+
+### Companion Dashboard Enhancement (Completed)
+**Date:** October 25, 2025
+
+**Features Implemented:**
+1. **Dynamic Profile Completion:**
+   - Calculates completion percentage based on 10 fields
+   - Checks: bio, city, hourly rate, services, interests, languages, gallery, bank account, Paystack subaccount, verification status
+   - Visual progress bar with percentage display
+   - Call-to-action button to complete profile
+   - Contextual button text (Edit Profile vs Complete Profile)
+
+2. **Real Statistics Dashboard:**
+   - Active bookings count (accepted or active status)
+   - Today's earnings from companion's share of completed bookings
+   - Response rate (responded vs total requests in last 30 days)
+   - Average rating from all booking ratings
+   - Total hours from completed bookings
+   - Acceptance rate (accepted/completed vs responded bookings)
+
+3. **Availability Toggle:**
+   - Real-time availability status display
+   - Switch to toggle online/offline
+   - Correct toast messages based on new state
+   - Invalidates both profile and stats cache on update
+
+4. **Pending Booking Requests:**
+   - Lists all pending, non-expired booking requests
+   - Shows client name via LEFT JOIN with users table
+   - Displays booking date, duration, amount, location
+   - Shows special requests if provided
+   - Countdown timer for request expiration (15 minutes)
+   - Accept and Decline buttons with confirmation toasts
+   - Proper cache invalidation after accept/reject
+
+5. **Backend Statistics Calculation:**
+   - `getCompanionStats()` method in storage layer
+   - LEFT JOIN bookings with payments for earning calculations
+   - LEFT JOIN bookings with ratings for average rating
+   - Date-based filtering for today's earnings
+   - 30-day window for response rate calculation
+   - All calculations based on real database data
+
+**Technical Implementation:**
+- TypeScript interfaces for stats and pending bookings
+- useMemo hook for profile completion calculation
+- TanStack Query mutations with proper cache invalidation
+- Backend aggregation logic in storage layer
+- Proper handling of nullable fields and edge cases
+- Loading states for all async operations
+
+**API Endpoints:**
+- GET `/api/stats/companion` - Real-time companion statistics
+- GET `/api/bookings/pending` - Pending requests with client info
+- PATCH `/api/companion/availability` - Toggle online/offline status
+- POST `/api/bookings/:id/accept` - Accept booking request
+- POST `/api/bookings/:id/reject` - Decline booking request
+
+**Data Integrity:**
+- No demo or mock data fallbacks
+- All statistics calculated from database
+- Proper LEFT JOIN for payment and client data
+- Filters expired bookings from pending list
+- Response rate and acceptance rate based on last 30 days
