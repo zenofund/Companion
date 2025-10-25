@@ -17,7 +17,7 @@ import {
   User, 
   MapPin, 
   Briefcase, 
-  DollarSign,
+  Banknote,
   CheckCircle,
   X
 } from "lucide-react";
@@ -41,7 +41,7 @@ const STEPS = [
   { id: 1, title: "Basic Info", icon: User },
   { id: 2, title: "Location", icon: MapPin },
   { id: 3, title: "Services", icon: Briefcase },
-  { id: 4, title: "Pricing", icon: DollarSign },
+  { id: 4, title: "Pricing", icon: Banknote },
 ];
 
 const AVAILABLE_SERVICES = [
@@ -454,7 +454,7 @@ export default function CompanionOnboarding() {
                         <FormLabel>Hourly Rate (₦)</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                               type="number"
                               placeholder="25000"

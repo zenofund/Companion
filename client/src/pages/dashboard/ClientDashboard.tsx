@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, Heart, Star, MessageCircle, Clock } from "lucide-react";
+import { Calendar, Banknote, Heart, Star, MessageCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
 
 export default function ClientDashboard() {
@@ -47,11 +47,11 @@ export default function ClientDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Banknote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="stat-total-spent">
-                ${stats?.totalSpent || "0.00"}
+                ₦{stats?.totalSpent || "0.00"}
               </div>
             </CardContent>
           </Card>
@@ -116,8 +116,8 @@ export default function ClientDashboard() {
                               {booking.hours} hours
                             </div>
                             <div className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />
-                              ${booking.totalAmount}
+                              <Banknote className="h-4 w-4" />
+                              ₦{booking.totalAmount}
                             </div>
                           </div>
                         </div>

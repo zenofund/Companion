@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   CheckCircle,
-  Save
+  Save,
+  MapPin
 } from "lucide-react";
 import { BankAccountSetup } from "@/components/payment/BankAccountSetup";
 
@@ -77,6 +78,7 @@ export default function EditProfile() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [isCalculatingLocation, setIsCalculatingLocation] = useState(false);
 
   const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
   const { data: profile, isLoading } = useQuery<any>({ queryKey: ["/api/companion/profile"] });
@@ -160,6 +162,61 @@ export default function EditProfile() {
       : [...selectedInterests, interest];
     setSelectedInterests(newInterests);
     form.setValue("interests", newInterests);
+  };
+
+  const calculateLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Geolocation not supported",
+        description: "Your browser doesn't support geolocation. Please enter coordinates manually.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCalculatingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        
+        form.setValue("latitude", lat);
+        form.setValue("longitude", lng);
+        
+        toast({
+          title: "Location calculated!",
+          description: `Coordinates: ${lat}, ${lng}`,
+        });
+        setIsCalculatingLocation(false);
+      },
+      (error) => {
+        let errorMessage = "Failed to get location";
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location permission denied. Please enable location access in your browser.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable. Please try again.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setIsCalculatingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   const onSubmit = (data: CompanionProfileForm) => {
@@ -264,44 +321,60 @@ export default function EditProfile() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="latitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Latitude</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              data-testid="input-latitude"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="space-y-4">
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={calculateLocation}
+                        disabled={isCalculatingLocation}
+                        data-testid="button-calculate-location"
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        {isCalculatingLocation ? "Calculating..." : "Calculate Location"}
+                      </Button>
+                    </div>
 
-                    <FormField
-                      control={form.control}
-                      name="longitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Longitude</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              data-testid="input-longitude"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="latitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Latitude</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.000001"
+                                data-testid="input-latitude"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="longitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitude</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.000001"
+                                data-testid="input-longitude"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

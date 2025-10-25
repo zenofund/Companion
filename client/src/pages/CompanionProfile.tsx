@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  DollarSign, 
   MapPin, 
   Calendar, 
   Star, 
@@ -19,7 +18,8 @@ import {
   Heart,
   MessageCircle,
   Briefcase,
-  X
+  X,
+  Banknote
 } from "lucide-react";
 
 interface Companion {
@@ -121,14 +121,14 @@ export default function CompanionProfile() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                       <div className="text-center md:text-left">
                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                          <DollarSign className="h-4 w-4" />
+                          <Banknote className="h-4 w-4" />
                           <span className="text-sm">Rate</span>
                         </div>
                         <p 
                           className="font-heading text-2xl font-semibold"
                           data-testid="text-hourly-rate"
                         >
-                          ${companion.hourlyRate}/hr
+                          ₦{companion.hourlyRate}/hr
                         </p>
                       </div>
 
@@ -334,7 +334,7 @@ export default function CompanionProfile() {
             onClick={() => setShowBookingModal(true)}
             data-testid="button-book-now-mobile"
           >
-            Book Now - ${companion.hourlyRate}/hr
+            Book Now - ₦{companion.hourlyRate}/hr
           </Button>
         </div>
 
@@ -345,7 +345,7 @@ export default function CompanionProfile() {
             onClick={() => setShowBookingModal(true)}
             data-testid="button-book-now-desktop"
           >
-            Book Now - ${companion.hourlyRate}/hr
+            Book Now - ₦{companion.hourlyRate}/hr
           </Button>
         </div>
       </main>

@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Clock, MapPin, DollarSign } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, Banknote } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -233,7 +233,7 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Hourly Rate</span>
-                  <span>${hourlyRate}/hr</span>
+                  <span>₦{hourlyRate}/hr</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Duration</span>
@@ -243,7 +243,7 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
                   <span className="text-primary" data-testid="text-total-amount">
-                    ${totalAmount.toFixed(2)}
+                    ₦{totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
               disabled={bookingMutation.isPending}
               data-testid="button-proceed-payment"
             >
-              {bookingMutation.isPending ? "Processing..." : `Proceed to Payment - $${totalAmount.toFixed(2)}`}
+              {bookingMutation.isPending ? "Processing..." : `Proceed to Payment - ₦${totalAmount.toFixed(2)}`}
             </Button>
           </form>
         </Form>

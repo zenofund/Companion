@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,13 +39,26 @@ export function BankAccountSetup({ onSuccess, showCard = true }: BankAccountSetu
     queryKey: ["/api/payment/banks"],
   });
 
+  const { data: profile } = useQuery<any>({ queryKey: ["/api/companion/profile"] });
+
   const form = useForm<BankAccountForm>({
     resolver: zodResolver(bankAccountSchema),
     defaultValues: {
-      accountNumber: "",
-      bankCode: "",
+      accountNumber: profile?.bankAccountNumber || "",
+      bankCode: profile?.bankCode || "",
     },
   });
+
+  // Set verified account name and form values when profile loads
+  useEffect(() => {
+    if (profile?.bankAccountName) {
+      setVerifiedAccountName(profile.bankAccountName);
+      form.reset({
+        accountNumber: profile.bankAccountNumber || "",
+        bankCode: profile.bankCode || "",
+      });
+    }
+  }, [profile]);
 
   const verifyMutation = useMutation({
     mutationFn: async (data: BankAccountForm) => {
@@ -57,9 +70,11 @@ export function BankAccountSetup({ onSuccess, showCard = true }: BankAccountSetu
       setVerifiedAccountName(data.account_name);
       setIsVerifying(false);
       toast({
-        title: "Bank account verified!",
+        title: "Bank account verified and saved!",
         description: `Account Name: ${data.account_name}`,
       });
+      // Invalidate profile to refresh bank data
+      queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
     },
     onError: (error: any) => {
       setIsVerifying(false);
@@ -180,16 +195,27 @@ export function BankAccountSetup({ onSuccess, showCard = true }: BankAccountSetu
         />
 
         {verifiedAccountName && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <div>
-              <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                Account Verified
-              </p>
-              <p className="text-sm text-green-700 dark:text-green-300">
-                {verifiedAccountName}
-              </p>
+          <div className="flex items-center justify-between gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                  Account Verified
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  {verifiedAccountName}
+                </p>
+              </div>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setVerifiedAccountName(null)}
+              data-testid="button-change-account"
+            >
+              Change
+            </Button>
           </div>
         )}
 

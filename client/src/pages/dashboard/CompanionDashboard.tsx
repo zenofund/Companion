@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
-  DollarSign, 
+  Banknote, 
   Calendar, 
   Star, 
   Clock, 
@@ -181,11 +181,11 @@ export default function CompanionDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Today's Earnings</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Banknote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="stat-today-earnings">
-                ${stats?.todayEarnings || "0.00"}
+                ₦{stats?.todayEarnings || "0.00"}
               </div>
             </CardContent>
           </Card>
@@ -268,7 +268,7 @@ export default function CompanionDashboard() {
                             <p className="text-xs">Duration</p>
                           </div>
                           <div>
-                            <p className="font-medium text-foreground">${request.totalAmount}</p>
+                            <p className="font-medium text-foreground">₦{request.totalAmount}</p>
                             <p className="text-xs">Amount</p>
                           </div>
                           <div>

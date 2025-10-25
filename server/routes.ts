@@ -463,6 +463,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const verification = await verifyBankAccount(accountNumber, bankCode);
 
+      // Persist verified bank data immediately
+      const companion = await storage.getCompanionByUserId(req.session.user.id);
+      if (companion) {
+        await storage.updateCompanion(companion.id, {
+          bankAccountNumber: accountNumber,
+          bankAccountName: verification.account_name,
+          bankCode: bankCode,
+        });
+      }
+
       return res.json(verification);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
