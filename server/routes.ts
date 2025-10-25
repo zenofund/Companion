@@ -127,14 +127,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar: user.avatar || undefined,
       };
 
-      return res.json({ 
-        message: "Account created successfully",
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          name: user.name,
+      // Save session before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session error" });
         }
+        return res.json({ 
+          message: "Account created successfully",
+          user: {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            name: user.name,
+          }
+        });
       });
     } catch (error: any) {
       return res.status(400).json({ message: error.message || "Registration failed" });
@@ -167,14 +174,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar: user.avatar || undefined,
       };
 
-      return res.json({ 
-        message: "Login successful",
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          name: user.name,
+      // Save session before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session error" });
         }
+        return res.json({ 
+          message: "Login successful",
+          user: {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            name: user.name,
+          }
+        });
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message || "Login failed" });
