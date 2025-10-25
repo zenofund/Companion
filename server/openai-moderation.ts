@@ -2,14 +2,25 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
+    }
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
 
 export async function moderateText(text: string): Promise<{
   flagged: boolean;
   categories: string[];
 }> {
   try {
-    const moderation = await openai.moderations.create({
+    const client = getOpenAIClient();
+    const moderation = await client.moderations.create({
       input: text,
     });
 
@@ -33,8 +44,9 @@ export async function moderateImage(imageUrl: string): Promise<{
   categories: string[];
 }> {
   try {
+    const client = getOpenAIClient();
     // Use GPT-5 vision to analyze image content
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-5",
       messages: [
         {
