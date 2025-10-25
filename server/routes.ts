@@ -587,6 +587,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== MESSAGE ROUTES ==========
+
+  app.get("/api/bookings/:bookingId/messages", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const booking = await storage.getBooking(req.params.bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Verify user is part of this booking
+      const companion = await storage.getCompanion(booking.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      if (booking.clientId !== req.session.user.id && companion.userId !== req.session.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const messages = await storage.getBookingMessages(req.params.bookingId);
+      return res.json(messages);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/bookings/:bookingId/messages/read", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      await storage.markMessagesAsRead(req.params.bookingId, req.session.user.id);
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // ========== ADMIN ROUTES ==========
 
   app.get("/api/admin/stats", async (req, res) => {
