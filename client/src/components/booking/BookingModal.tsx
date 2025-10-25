@@ -139,7 +139,9 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                        }}
                         disabled={(date) => {
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);

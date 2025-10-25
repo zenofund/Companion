@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025 - Booking UX & Mobile Improvements**
+- Fixed date picker in booking modal to properly update form field when date is selected
+- Made companion cards fully mobile-responsive with 4-column grid layout
+- Redesigned stats display with icons above values (Rate, City, Age, Rating) for compact mobile view
+- Reduced padding and text sizes on mobile for tighter, more efficient layout
+- Auth guard already in place - redirects users to login when booking without authentication
+
 **October 25, 2025 - Dark Mode & Spacing Improvements**
 - Implemented comprehensive dark mode theme with ThemeProvider component
 - Added theme toggle button (sun/moon icon) in navigation header
