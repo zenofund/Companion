@@ -18,7 +18,6 @@ import {
   MapPin, 
   Briefcase, 
   DollarSign,
-  Camera,
   CheckCircle,
   X
 } from "lucide-react";
@@ -43,7 +42,6 @@ const STEPS = [
   { id: 2, title: "Location", icon: MapPin },
   { id: 3, title: "Services", icon: Briefcase },
   { id: 4, title: "Pricing", icon: DollarSign },
-  { id: 5, title: "Gallery", icon: Camera },
 ];
 
 const AVAILABLE_SERVICES = [
@@ -485,31 +483,6 @@ export default function CompanionOnboarding() {
                 </div>
               )}
 
-              {/* Step 5: Gallery */}
-              {currentStep === 5 && (
-                <div className="space-y-4">
-                  <h3 className="font-heading text-xl font-semibold mb-4">Add photos to your profile</h3>
-                  
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                    <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-2">
-                      Photo upload feature coming soon
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      For now, you can add photos later from your dashboard
-                    </p>
-                  </div>
-
-                  <Card className="bg-muted">
-                    <CardContent className="p-4">
-                      <p className="text-sm text-muted-foreground">
-                        📸 <strong>Photo Guidelines:</strong> Upload at least 3-5 high-quality photos.
-                        All photos are reviewed before being published to ensure they meet our community standards.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
 
               {/* Navigation Buttons */}
               <div className="flex justify-between pt-6">

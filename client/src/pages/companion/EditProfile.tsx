@@ -14,11 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
-  MapPin, 
-  DollarSign,
   CheckCircle,
   Save
 } from "lucide-react";
+import { BankAccountSetup } from "@/components/payment/BankAccountSetup";
 
 const companionProfileSchema = z.object({
   city: z.string().min(2, "City is required"),
@@ -79,8 +78,8 @@ export default function EditProfile() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
-  const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
-  const { data: profile, isLoading } = useQuery({ queryKey: ["/api/companion/profile"] });
+  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: profile, isLoading } = useQuery<any>({ queryKey: ["/api/companion/profile"] });
 
   const form = useForm<CompanionProfileForm>({
     resolver: zodResolver(companionProfileSchema),
@@ -389,16 +388,12 @@ export default function EditProfile() {
                       <FormItem>
                         <FormLabel>Hourly Rate (₦)</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              type="number"
-                              placeholder="25000"
-                              className="pl-10"
-                              data-testid="input-hourly-rate"
-                              {...field}
-                            />
-                          </div>
+                          <Input
+                            type="number"
+                            placeholder="25000"
+                            data-testid="input-hourly-rate"
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
                           Set a competitive rate based on your experience
@@ -409,6 +404,12 @@ export default function EditProfile() {
                   />
                 </CardContent>
               </Card>
+
+              {!profile?.paystackSubaccountCode && (
+                <BankAccountSetup onSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
+                }} />
+              )}
 
               <div className="flex justify-between gap-4">
                 <Button
