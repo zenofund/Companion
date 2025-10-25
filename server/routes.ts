@@ -391,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { avatar, ...companionData } = req.body;
-      const data = insertCompanionSchema.parse(companionData);
+      const data = insertCompanionSchema.omit({ userId: true }).parse(companionData);
 
       // Moderate avatar if provided
       if (avatar) {
