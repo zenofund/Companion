@@ -354,7 +354,9 @@ export default function CompanionDashboard() {
           {profile && (
             <CompanionProfileForm
               profile={profile}
-              onSave={async (data) => await updateProfileMutation.mutateAsync(data)}
+              onSave={async (data) => {
+                await updateProfileMutation.mutateAsync(data);
+              }}
               onSuccess={() => setIsProfileModalOpen(false)}
               isLoading={updateProfileMutation.isPending}
             />
