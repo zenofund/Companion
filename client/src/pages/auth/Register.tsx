@@ -43,7 +43,8 @@ export default function Register() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterForm) => {
-      return await apiRequest("POST", "/api/auth/register", data);
+      const response = await apiRequest("POST", "/api/auth/register", data);
+      return await response.json();
     },
     onSuccess: (data: any) => {
       toast({
@@ -51,7 +52,7 @@ export default function Register() {
         description: "Welcome to fliQ. Let's get you started.",
       });
       
-      if (data.user.role === "companion") {
+      if (data.user?.role === "companion") {
         setLocation("/onboarding/companion");
       } else {
         setLocation("/dashboard/client");

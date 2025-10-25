@@ -32,7 +32,8 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
-      return await apiRequest("POST", "/api/auth/login", data);
+      const response = await apiRequest("POST", "/api/auth/login", data);
+      return await response.json();
     },
     onSuccess: (data: any) => {
       toast({
@@ -40,9 +41,9 @@ export default function Login() {
         description: "You've successfully logged in.",
       });
       // Redirect based on role
-      if (data.user.role === "admin") {
+      if (data.user?.role === "admin") {
         setLocation("/dashboard/admin");
-      } else if (data.user.role === "companion") {
+      } else if (data.user?.role === "companion") {
         setLocation("/dashboard/companion");
       } else {
         setLocation("/dashboard/client");
