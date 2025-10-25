@@ -8,19 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Clock, MapPin, Banknote } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Clock, MapPin, Banknote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const bookingSchema = z.object({
-  bookingDate: z.date({
-    required_error: "Please select a date and time",
-  }),
+  bookingDate: z.string().min(1, "Please select a date"),
   hours: z.number().min(1, "Minimum 1 hour").max(24, "Maximum 24 hours"),
   meetingLocation: z.string().min(5, "Please provide a meeting location"),
   specialRequests: z.string().optional(),
@@ -41,11 +35,15 @@ interface BookingModalProps {
 export function BookingModal({ open, onOpenChange, companion }: BookingModalProps) {
   const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState("12:00");
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  // Calculate min and max dates
+  const today = new Date().toISOString().split('T')[0];
+  const maxDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const form = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
+      bookingDate: "",
       hours: 2,
       meetingLocation: "",
       specialRequests: "",
@@ -109,68 +107,37 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Date Selection */}
-            <FormField
-              control={form.control}
-              name="bookingDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                          data-testid="button-select-date"
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(date) => {
-                          field.onChange(date);
-                          setDatePickerOpen(false);
-                        }}
-                        disabled={(date) => {
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          const compareDate = new Date(date);
-                          compareDate.setHours(0, 0, 0, 0);
-                          const maxDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-                          maxDate.setHours(0, 0, 0, 0);
-                          return compareDate < today || compareDate > maxDate;
-                        }}
-                        initialFocus
+            {/* Date & Time Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="bookingDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        min={today}
+                        max={maxDate}
+                        data-testid="input-date"
+                        {...field}
                       />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Time Selection */}
-            <div className="space-y-2">
-              <FormLabel>Time</FormLabel>
-              <Input
-                type="time"
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                data-testid="input-time"
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
+
+              <div className="space-y-2">
+                <FormLabel>Time</FormLabel>
+                <Input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  data-testid="input-time"
+                />
+              </div>
             </div>
 
             {/* Hours */}

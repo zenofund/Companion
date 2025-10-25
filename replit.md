@@ -10,10 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 25, 2025 - Date Picker Fix**
-- Fixed booking date picker to properly close popover after date selection
-- Added state management for better UX feedback when selecting dates
-- Date now displays immediately in the button after selection
+**October 25, 2025 - Date Picker Redesign**
+- Completely redesigned booking date picker with native HTML5 date input
+- Removed complex popover/calendar component in favor of simpler, more reliable solution
+- Date and time now side-by-side in a clean grid layout
+- Automatic min/max date validation (today to 90 days ahead)
+- Works perfectly on all devices with native OS date pickers
 
 **October 25, 2025 - Authentication & Mobile UX Fixes**
 - Fixed critical authentication bug where users appeared logged out when viewing companion profiles
