@@ -45,6 +45,14 @@ export interface IStorage {
   getClientBookings(clientId: string): Promise<Booking[]>;
   getCompanionBookings(companionId: string): Promise<Booking[]>;
   getPendingBookings(companionId: string): Promise<Booking[]>;
+  getCompanionStats(companionId: string): Promise<{
+    activeBookings: number;
+    todayEarnings: string;
+    responseRate: string;
+    averageRating: string;
+    totalHours: number;
+    acceptanceRate: string;
+  }>;
 
   // Payments
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -207,6 +215,83 @@ export class DatabaseStorage implements IStorage {
       ...r.booking,
       clientName: r.client?.name || "Unknown",
     }));
+  }
+
+  async getCompanionStats(companionId: string): Promise<{
+    activeBookings: number;
+    todayEarnings: string;
+    responseRate: string;
+    averageRating: string;
+    totalHours: number;
+    acceptanceRate: string;
+  }> {
+    // Get all bookings with payments
+    const allBookings = await this.getCompanionBookings(companionId);
+    
+    // Active bookings (accepted or active status)
+    const activeBookings = allBookings.filter(
+      (b: any) => b.status === "accepted" || b.status === "active"
+    ).length;
+
+    // Today's earnings (completed bookings today)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEarnings = allBookings
+      .filter((b: any) => 
+        b.status === "completed" && 
+        b.updatedAt && 
+        new Date(b.updatedAt) >= today &&
+        b.payment
+      )
+      .reduce((sum: number, b: any) => {
+        return sum + parseFloat(b.payment.companionEarning || "0");
+      }, 0);
+
+    // Total hours from completed bookings
+    const totalHours = allBookings
+      .filter((b: any) => b.status === "completed")
+      .reduce((sum: number, b: any) => sum + (b.hours || 0), 0);
+
+    // Response rate (accepted + rejected) / total requests in last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentRequests = allBookings.filter(
+      (b: any) => b.createdAt && new Date(b.createdAt) >= thirtyDaysAgo
+    );
+    const respondedRequests = recentRequests.filter(
+      (b: any) => b.status !== "pending" && b.status !== "expired"
+    );
+    const responseRate = recentRequests.length > 0
+      ? Math.round((respondedRequests.length / recentRequests.length) * 100)
+      : 0;
+
+    // Acceptance rate (accepted or completed) / responded requests
+    const acceptedRequests = respondedRequests.filter(
+      (b: any) => b.status === "accepted" || b.status === "active" || b.status === "completed"
+    );
+    const acceptanceRate = respondedRequests.length > 0
+      ? Math.round((acceptedRequests.length / respondedRequests.length) * 100)
+      : 0;
+
+    // Average rating
+    const ratingsResult = await db
+      .select({ rating: ratings.rating })
+      .from(ratings)
+      .leftJoin(bookings, eq(ratings.bookingId, bookings.id))
+      .where(eq(bookings.companionId, companionId));
+    
+    const avgRating = ratingsResult.length > 0
+      ? (ratingsResult.reduce((sum, r) => sum + (r.rating || 0), 0) / ratingsResult.length).toFixed(1)
+      : "0.0";
+
+    return {
+      activeBookings,
+      todayEarnings: todayEarnings.toFixed(2),
+      responseRate: responseRate.toString(),
+      averageRating: avgRating,
+      totalHours,
+      acceptanceRate: acceptanceRate.toString(),
+    };
   }
 
   // Payments

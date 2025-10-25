@@ -901,37 +901,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const companionBookings = await storage.getCompanionBookings(companion.id);
-      
-      // Calculate active bookings (accepted or active status)
-      const activeBookings = companionBookings.filter(
-        (b) => b.status === "accepted" || b.status === "active"
-      ).length;
+      const stats = await storage.getCompanionStats(companion.id);
 
-      // Calculate today's earnings
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayBookings = companionBookings.filter(
-        (b) => b.status === "completed" && new Date(b.updatedAt!) >= today
-      );
-      const todayEarnings = todayBookings.reduce((sum, b) => {
-        const payment = b.payment;
-        return sum + (payment ? parseFloat(payment.companionEarning) : 0);
-      }, 0);
-
-      // Calculate total hours from completed bookings
-      const totalHours = companionBookings
-        .filter((b) => b.status === "completed")
-        .reduce((sum, b) => sum + (b.hours || 0), 0);
-
-      return res.json({
-        activeBookings,
-        todayEarnings: todayEarnings.toFixed(2),
-        responseRate: companion.responseRate || "0",
-        averageRating: companion.averageRating || "0.0",
-        totalHours,
-        acceptanceRate: companion.acceptanceRate || "0",
-      });
+      return res.json(stats);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
