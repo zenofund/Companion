@@ -423,6 +423,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertBookingSchema.parse(req.body);
 
+      // Get companion details
+      const companion = await storage.getCompanion(data.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      // Calculate split amounts
+      const platformFee = parseFloat(await storage.getAdminSetting("platform_fee") || "20");
+      const { calculateSplitAmounts } = await import("./paystack");
+      const splitAmounts = calculateSplitAmounts(parseFloat(data.totalAmount), platformFee);
+
       // Create booking with 15-minute expiry
       const requestExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
@@ -437,21 +448,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestExpiresAt,
       });
 
-      // Initialize Paystack payment
+      // Initialize Paystack payment with split payment
       const payment = await initializePayment(
         req.session.user.email,
         parseFloat(data.totalAmount),
         {
           bookingId: booking.id,
           userId: req.session.user.id,
-        }
+          companionId: data.companionId,
+        },
+        companion.paystackSubaccountCode || undefined,
+        splitAmounts.platformFee
       );
 
-      // Create payment record
+      // Create payment record with split amounts
       await storage.createPayment({
         bookingId: booking.id,
         amount: data.totalAmount,
         paystackReference: payment.reference,
+        platformFee: splitAmounts.platformFee.toString(),
+        companionEarning: splitAmounts.companionEarning.toString(),
       });
 
       return res.json({
@@ -546,15 +562,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "paid",
           });
 
-          await storage.updateBooking(verification.metadata.bookingId, {
-            status: "pending",
-          });
+          const booking = await storage.getBooking(verification.metadata.bookingId);
+          if (booking && booking.status !== "rejected") {
+            await storage.updateBooking(verification.metadata.bookingId, {
+              status: "accepted",
+            });
+          }
         }
       }
 
       return res.json(verification);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/payment/banks", async (req, res) => {
+    try {
+      const banks = await getBanks();
+      return res.json(banks);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
     }
   });
 
