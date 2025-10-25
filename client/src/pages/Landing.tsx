@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { CompanionCard } from "@/components/companion/CompanionCard";
+import { MapView } from "@/components/map/MapView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Search, SlidersHorizontal } from "lucide-react";
@@ -185,12 +186,19 @@ export default function Landing() {
                 </div>
               )}
             </div>
+          ) : userLocation ? (
+            <div className="h-[600px]" data-testid="map-container">
+              <MapView
+                companions={filteredCompanions || []}
+                userLocation={userLocation}
+              />
+            </div>
           ) : (
             <div 
               className="h-[600px] rounded-lg bg-muted flex items-center justify-center"
-              data-testid="map-container"
+              data-testid="map-loading"
             >
-              <p className="text-muted-foreground">Map view coming soon</p>
+              <p className="text-muted-foreground">Getting your location...</p>
             </div>
           )}
         </section>
