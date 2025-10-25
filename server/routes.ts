@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { avatar, ...companionData } = req.body;
-      const data = insertCompanionSchema.partial().parse(companionData);
+      const data = insertCompanionSchema.omit({ userId: true }).partial().parse(companionData);
 
       // Update user avatar if provided
       if (avatar !== undefined) {
