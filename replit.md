@@ -2,16 +2,7 @@
 
 ## Overview
 
-fliQ is a real-time, geolocation-based web application for booking professional companions, inspired by Uber's map-centric interface. The platform connects clients with verified companions through an interactive map view, secure payment processing, and real-time messaging capabilities.
-
-**Core Features:**
-- Interactive map-based companion discovery with geolocation
-- Real-time booking requests with 15-minute acceptance windows
-- Secure payment processing via Paystack split payments
-- AI-powered content moderation for safety
-- WebSocket-based real-time chat for active bookings
-- Multi-role dashboards (Client, Companion, Admin)
-- Profile verification and moderation system
+fliQ is a real-time, geolocation-based web application designed to connect clients with verified professional companions through an interactive map interface. Inspired by Uber, it offers secure payment processing, real-time messaging, and multi-role dashboards for clients, companions, and administrators. The platform aims to revolutionize companion booking by providing a safe, efficient, and transparent service.
 
 ## User Preferences
 
@@ -19,329 +10,36 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 
-**Technology Stack:**
-- **Framework:** React with TypeScript
-- **Routing:** Wouter (lightweight client-side routing)
-- **State Management:** TanStack Query (React Query) for server state
-- **Styling:** TailwindCSS with custom design system
-- **UI Components:** Radix UI primitives with shadcn/ui component library
-- **Icons:** Lucide React
+**Technology Stack:** React with TypeScript, Wouter for routing, TanStack Query for state management, TailwindCSS with a custom design system, Radix UI and shadcn/ui for components, and Lucide React for icons.
 
-**Design System:**
-- Typography: Inter (UI/body), Poppins (headings/CTAs)
-- Map-first, mobile-responsive interface
-- Custom color system with HSL-based theming
-- Spacing based on Tailwind primitives (2, 4, 8, 12, 16, 24)
-- Elevation system for depth (hover-elevate, active-elevate-2)
+**Design System:** Features a map-first, mobile-responsive design, Inter and Poppins fonts, a custom HSL-based color system, and Tailwind-based spacing and elevation.
 
-**Key Pages:**
-- Landing: Map/list view toggle for browsing companions
-- Companion Profile: Detailed view with booking modal
-- Client Dashboard: Booking management and history
-- Companion Dashboard: Request handling and availability
-- Booking Chat: Real-time messaging for active bookings with booking details sidebar
-- Admin Dashboard: Platform oversight and moderation
+**Key Pages:** Includes a landing page with map/list view, detailed companion profiles, client and companion dashboards, a real-time booking chat, and an admin dashboard.
 
-### Backend Architecture
+### Backend
 
-**Technology Stack:**
-- **Runtime:** Node.js with Express.js
-- **Language:** TypeScript with ES modules
-- **Session Management:** express-session with MemoryStore
-- **API Architecture:** RESTful endpoints with WebSocket support
+**Technology Stack:** Node.js with Express.js and TypeScript. Uses session-based authentication with HTTP-only cookies and role-based access control.
 
-**Authentication & Sessions:**
-- Session-based authentication (no JWT)
-- HTTP-only cookies for security
-- Session secret configured via environment variables
-- 7-day session lifetime
-- Role-based access control (client, companion, admin)
+**Real-time Communication:** Implements a WebSocket server for secure, real-time chat messaging with authentication and booking membership verification.
 
-**Real-time Communication:**
-- WebSocket server for chat messaging at path `/ws`
-- User authentication validation on connection
-- Booking membership verification before message broadcast
-- Server-side message echo to all participants (including sender)
-- Error handling for unauthorized access attempts
-- Automatic reconnection on disconnect
-- Client connection tracking with user ID mapping
+**API Endpoints Pattern:** Organized RESTful API for authentication, companion management, booking operations, payment processing, chat messaging, and admin functions.
 
-**API Endpoints Pattern:**
-- User authentication: `/api/auth/*`
-- Companion management: `/api/companions/*`
-- Booking operations: `/api/bookings/*`
-- Payment processing: `/api/payments/*`
-- Chat messaging: 
-  - WebSocket `/ws` for real-time messaging
-  - GET `/api/bookings/:bookingId/messages` for message history
-  - POST `/api/bookings/:bookingId/messages/read` to mark messages as read
-- Admin operations: `/api/admin/*`
+### Data Storage
 
-### Data Storage Architecture
+**Database:** Neon Serverless PostgreSQL, managed with Drizzle ORM for type-safe queries and schema migrations.
 
-**Database:**
-- **Provider:** Neon Serverless PostgreSQL
-- **ORM:** Drizzle ORM with type-safe queries
-- **Migration Strategy:** Schema-first with drizzle-kit
+**Schema Design:** Core tables include `users`, `companions`, `bookings`, `payments`, `messages`, `ratings`, `admin_settings`, and `admin_logs`. Geolocation data is stored with high precision for distance-based searches.
 
-**Schema Design:**
+**Moderation System:** Integrates a moderation system for companion profiles and content, allowing for pending, approved, and rejected statuses.
 
-Core Tables:
-- `users`: Authentication and base profile (email, password, role, avatar, verification status)
-- `companions`: Extended profile for companions (location, bio, services, rates, availability)
-- `bookings`: Booking records with status tracking (pending, accepted, active, completed, etc.)
-- `payments`: Payment transactions linked to bookings
-- `messages`: Chat messages for active bookings
-- `ratings`: Post-booking reviews
-- `admin_settings`: Platform configuration (split percentages, etc.)
-- `admin_logs`: Audit trail for admin actions
+## External Dependencies
 
-**Key Relationships:**
-- User → Companion (one-to-one, cascade delete)
-- Client (User) → Bookings (one-to-many)
-- Companion → Bookings (one-to-many)
-- Booking → Payment (one-to-one)
-- Booking → Messages (one-to-many)
+**Payment Integration:** Paystack for secure payment processing, including split payments to companions, bank account verification, and webhook handling.
 
-**Geolocation Strategy:**
-- Latitude/longitude stored as decimal(10,7) for precision
-- Client-side geolocation API for user position
-- Distance-based companion search queries
+**AI Content Moderation:** OpenAI's Moderation API for text and GPT-5 Vision API for image analysis, ensuring content safety and flagging for admin review.
 
-**Moderation System:**
-- Enum status: pending, approved, rejected
-- Applied to companion profiles and uploaded content
-- Gallery images stored as text arrays (URLs)
+**Real-time Services:** Native WebSocket implementation for chat, self-hosted without external service dependencies.
 
-### External Dependencies
-
-**Payment Integration: Paystack**
-- Initialize payment transactions
-- Verify payment completion
-- Split payment subaccounts for companions
-- Bank account verification
-- Webhook handling for payment events
-- Base URL: `https://api.paystack.co`
-- Authentication: Bearer token (PAYSTACK_SECRET_KEY)
-
-**AI Content Moderation: OpenAI**
-- Text moderation via Moderation API
-- Image analysis via GPT-5 Vision API
-- Safety checks before content publication
-- Flagged content held for admin review
-- API Key: OPENAI_API_KEY environment variable
-
-**Real-time Services: WebSocket (ws)**
-- Native WebSocket implementation for chat
-- No external service dependency (self-hosted)
-- Server-side client connection management
-
-**Frontend Assets:**
-- Google Fonts: Inter and Poppins font families
-- Preconnect optimization for font loading
-
-**Development Tools:**
-- Vite for development server and build
-- Replit-specific plugins (runtime error overlay, cartographer, dev banner)
-- ESBuild for server-side bundling
-
-**Environment Variables Required:**
-- `DATABASE_URL`: Neon PostgreSQL connection string
-- `SESSION_SECRET`: Session encryption key
-- `PAYSTACK_SECRET_KEY`: Paystack API authentication
-- `OPENAI_API_KEY`: OpenAI API authentication
-- `NODE_ENV`: Environment mode (development/production)
-- `REPLIT_DEV_DOMAIN`: Deployment domain for callbacks
-
-**Security Considerations:**
-- Password hashing via bcryptjs
-- CSRF protection through SameSite cookies
-- Content moderation before publication
-- Role-based authorization checks
-- Secure payment handling (no client-side secrets)
-- WebSocket authentication:
-  - Session cookie signature verification using cookie-signature
-  - Session store validation to extract authenticated user ID
-  - No client-provided user IDs trusted - all authentication session-based
-  - Booking membership verification before message operations
-  - Authorization checks prevent cross-booking message access
-  - Error responses for all failure cases (missing cookie, invalid signature, expired session, unauthorized access)
-
-## Recent Changes
-
-### Real-time Chat Implementation (Completed)
-**Date:** October 25, 2025
-
-**Features Implemented:**
-1. **WebSocket Infrastructure:**
-   - Custom WebSocket hook (`useWebSocket`) for connection management
-   - Automatic reconnection on disconnect
-   - Connection status indicator
-   - Error handling and logging
-
-2. **Chat UI Component:**
-   - Message bubbles with distinct colors (green for sender, yellow for receiver)
-   - Timestamp display in 12-hour format
-   - Auto-scroll to latest message
-   - Input field with send button
-   - Loading states and empty states
-
-3. **Booking Chat Page:**
-   - Integrated chat with booking details sidebar
-   - Displays booking status, date, location, amount
-   - Shows special requests if any
-   - Navigation back to dashboard
-   - Responsive layout (sidebar + chat)
-
-4. **Security Enhancements:**
-   - User validation on WebSocket connection
-   - Booking membership verification before message broadcast
-   - Only booking participants (client and companion) can access chat
-   - Server echoes messages to all participants including sender
-   - Prevents unauthorized cross-booking message access
-
-5. **API Endpoints:**
-   - GET `/api/bookings/:bookingId/messages` - Fetch message history with authorization
-   - POST `/api/bookings/:bookingId/messages/read` - Mark messages as read
-   - WebSocket `/ws` - Real-time messaging with auth and error handling
-
-**Technical Implementation:**
-- Message history fetched via REST API on page load
-- Real-time updates via WebSocket
-- Server-side message echo eliminates optimistic update failures
-- Duplicate message detection by ID prevents display issues
-- Companion user ID resolution for proper participant identification
-
-**Security Implementation:**
-- WebSocket connections validate session cookies using cookie-signature library
-- Session signatures verified with SESSION_SECRET before trusting session data
-- Authenticated user ID extracted from validated session (never from client)
-- All message operations check booking membership for authenticated user
-- Prevents impersonation, session hijacking, and cross-booking access
-- Production-ready with comprehensive security validation
-
-### Admin Dashboard Implementation (Completed)
-**Date:** October 25, 2025
-
-**Features Implemented:**
-1. **Platform Statistics Overview:**
-   - Total users count
-   - Total companions count
-   - Total bookings count
-   - Platform revenue (Naira)
-   - Pending moderation count
-   - Loading skeletons for all metrics
-
-2. **Companion Moderation System:**
-   - View pending companion profiles with user details
-   - Approve companion profiles with one click
-   - Reject companion profiles with reason input
-   - Display companion bio, city, hourly rate, submission date
-   - Loading spinner during data fetch
-   - Empty state for no pending companions
-
-3. **Platform Settings Management:**
-   - Configure platform fee percentage (0-100%)
-   - Live calculation showing companion earnings split
-   - Form validation prevents invalid values
-   - Loading skeleton during settings fetch
-   - Automatic save and cache invalidation
-
-4. **Admin Activity Logs:**
-   - Chronological log of all admin actions
-   - Action type badges (Approved Companion, Rejected Companion, Updated Platform Fee)
-   - Timestamp display with date and time
-   - Admin name/email attribution
-   - JSON details for complex actions
-   - Loading spinner during log fetch
-
-5. **API Endpoints:**
-   - GET `/api/admin/stats` - Platform statistics
-   - GET `/api/admin/pending-companions` - Companions awaiting approval
-   - POST `/api/admin/companions/:id/approve` - Approve companion profile
-   - POST `/api/admin/companions/:id/reject` - Reject companion profile with reason
-   - GET `/api/admin/settings` - Fetch platform settings
-   - PATCH `/api/admin/settings` - Update platform settings
-   - GET `/api/admin/logs` - Fetch admin activity logs
-
-**Technical Implementation:**
-- Session-based admin role verification on all endpoints
-- TanStack Query for data fetching with loading states
-- Optimistic UI updates with cache invalidation
-- Toast notifications for success/error feedback
-- Backend error messages surfaced to frontend
-- Activity logging for audit trail (all approve/reject/settings actions)
-
-**Security & UX:**
-- Admin role check on every endpoint prevents unauthorized access
-- Loading state during authentication prevents Access Denied flash
-- Loading skeletons/spinners prevent empty state flicker
-- Mutation buttons disabled during pending requests
-- Form validation prevents invalid platform fee values
-- Production-ready with comprehensive error handling
-
-### Companion Dashboard Enhancement (Completed)
-**Date:** October 25, 2025
-
-**Features Implemented:**
-1. **Dynamic Profile Completion:**
-   - Calculates completion percentage based on 10 fields
-   - Checks: bio, city, hourly rate, services, interests, languages, gallery, bank account, Paystack subaccount, verification status
-   - Visual progress bar with percentage display
-   - Call-to-action button to complete profile
-   - Contextual button text (Edit Profile vs Complete Profile)
-
-2. **Real Statistics Dashboard:**
-   - Active bookings count (accepted or active status)
-   - Today's earnings from companion's share of completed bookings
-   - Response rate (responded vs total requests in last 30 days)
-   - Average rating from all booking ratings
-   - Total hours from completed bookings
-   - Acceptance rate (accepted/completed vs responded bookings)
-
-3. **Availability Toggle:**
-   - Real-time availability status display
-   - Switch to toggle online/offline
-   - Correct toast messages based on new state
-   - Invalidates both profile and stats cache on update
-
-4. **Pending Booking Requests:**
-   - Lists all pending, non-expired booking requests
-   - Shows client name via LEFT JOIN with users table
-   - Displays booking date, duration, amount, location
-   - Shows special requests if provided
-   - Countdown timer for request expiration (15 minutes)
-   - Accept and Decline buttons with confirmation toasts
-   - Proper cache invalidation after accept/reject
-
-5. **Backend Statistics Calculation:**
-   - `getCompanionStats()` method in storage layer
-   - LEFT JOIN bookings with payments for earning calculations
-   - LEFT JOIN bookings with ratings for average rating
-   - Date-based filtering for today's earnings
-   - 30-day window for response rate calculation
-   - All calculations based on real database data
-
-**Technical Implementation:**
-- TypeScript interfaces for stats and pending bookings
-- useMemo hook for profile completion calculation
-- TanStack Query mutations with proper cache invalidation
-- Backend aggregation logic in storage layer
-- Proper handling of nullable fields and edge cases
-- Loading states for all async operations
-
-**API Endpoints:**
-- GET `/api/stats/companion` - Real-time companion statistics
-- GET `/api/bookings/pending` - Pending requests with client info
-- PATCH `/api/companion/availability` - Toggle online/offline status
-- POST `/api/bookings/:id/accept` - Accept booking request
-- POST `/api/bookings/:id/reject` - Decline booking request
-
-**Data Integrity:**
-- No demo or mock data fallbacks
-- All statistics calculated from database
-- Proper LEFT JOIN for payment and client data
-- Filters expired bookings from pending list
-- Response rate and acceptance rate based on last 30 days
+**Frontend Assets:** Google Fonts for Inter and Poppins font families.
