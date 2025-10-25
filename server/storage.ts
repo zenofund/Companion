@@ -65,6 +65,15 @@ export interface IStorage {
   getAdminSetting(key: string): Promise<string | undefined>;
   setAdminSetting(key: string, value: string): Promise<void>;
   createAdminLog(log: { adminId: string; action: string; targetType?: string; targetId?: string; details?: any }): Promise<void>;
+  getPendingCompanions(): Promise<Companion[]>;
+  getAdminLogs(limit?: number): Promise<any[]>;
+  getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalCompanions: number;
+    totalBookings: number;
+    totalRevenue: string;
+    pendingModeration: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -275,6 +284,73 @@ export class DatabaseStorage implements IStorage {
     details?: any 
   }): Promise<void> {
     await db.insert(adminLogs).values(log);
+  }
+
+  async getPendingCompanions(): Promise<Companion[]> {
+    const results = await db
+      .select()
+      .from(companions)
+      .where(eq(companions.moderationStatus, "pending"))
+      .orderBy(desc(companions.createdAt));
+    return results;
+  }
+
+  async getAdminLogs(limit: number = 50): Promise<any[]> {
+    const logs = await db
+      .select({
+        id: adminLogs.id,
+        adminId: adminLogs.adminId,
+        action: adminLogs.action,
+        targetType: adminLogs.targetType,
+        targetId: adminLogs.targetId,
+        details: adminLogs.details,
+        createdAt: adminLogs.createdAt,
+        adminName: users.name,
+        adminEmail: users.email,
+      })
+      .from(adminLogs)
+      .leftJoin(users, eq(adminLogs.adminId, users.id))
+      .orderBy(desc(adminLogs.createdAt))
+      .limit(limit);
+    return logs;
+  }
+
+  async getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalCompanions: number;
+    totalBookings: number;
+    totalRevenue: string;
+    pendingModeration: number;
+  }> {
+    const [userCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users);
+
+    const [companionCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(companions);
+
+    const [bookingCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(bookings);
+
+    const [revenueSum] = await db
+      .select({ sum: sql<string>`COALESCE(SUM(${payments.platformFee}), 0)` })
+      .from(payments)
+      .where(eq(payments.status, "paid"));
+
+    const [pendingCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(companions)
+      .where(eq(companions.moderationStatus, "pending"));
+
+    return {
+      totalUsers: Number(userCount.count) || 0,
+      totalCompanions: Number(companionCount.count) || 0,
+      totalBookings: Number(bookingCount.count) || 0,
+      totalRevenue: revenueSum.sum || "0",
+      pendingModeration: Number(pendingCount.count) || 0,
+    };
   }
 }
 

@@ -721,14 +721,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Return mock stats for now
-      return res.json({
-        totalUsers: 0,
-        newUsers: 0,
-        activeBookings: 0,
-        platformRevenue: "0.00",
-        pendingReviews: 0,
-      });
+      const stats = await storage.getPlatformStats();
+      return res.json(stats);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -740,8 +734,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Query pending companions
-      return res.json([]);
+      const pendingCompanions = await storage.getPendingCompanions();
+      
+      // Get user details for each companion
+      const companionsWithUsers = await Promise.all(
+        pendingCompanions.map(async (companion) => {
+          const user = await storage.getUser(companion.userId);
+          return {
+            ...companion,
+            user: {
+              id: user?.id,
+              name: user?.name,
+              email: user?.email,
+              avatar: user?.avatar,
+            },
+          };
+        })
+      );
+
+      return res.json(companionsWithUsers);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/companions/:id/approve", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const companion = await storage.updateCompanion(req.params.id, {
+        moderationStatus: "approved",
+      });
+
+      // Log admin action
+      await storage.createAdminLog({
+        adminId: req.session.user.id,
+        action: "approve_companion",
+        targetType: "companion",
+        targetId: req.params.id,
+      });
+
+      return res.json(companion);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/companions/:id/reject", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const { reason } = req.body;
+
+      const companion = await storage.updateCompanion(req.params.id, {
+        moderationStatus: "rejected",
+      });
+
+      // Log admin action
+      await storage.createAdminLog({
+        adminId: req.session.user.id,
+        action: "reject_companion",
+        targetType: "companion",
+        targetId: req.params.id,
+        details: { reason },
+      });
+
+      return res.json(companion);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/settings", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const platformFee = await storage.getAdminSetting("platform_fee_percentage") || "20";
+      
+      return res.json({
+        platformFeePercentage: platformFee,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/settings", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const { platformFeePercentage } = req.body;
+
+      if (platformFeePercentage !== undefined) {
+        await storage.setAdminSetting("platform_fee_percentage", platformFeePercentage.toString());
+
+        // Log admin action
+        await storage.createAdminLog({
+          adminId: req.session.user.id,
+          action: "update_platform_fee",
+          details: { platformFeePercentage },
+        });
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/logs", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const logs = await storage.getAdminLogs(limit);
+      return res.json(logs);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
