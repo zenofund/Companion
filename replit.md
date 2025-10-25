@@ -8,6 +8,14 @@ fliQ is a real-time, geolocation-based web application designed to connect clien
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**October 25, 2025 - UI/UX Improvements**
+- Converted profile editing from full-page modal to Sheet (side drawer overlay) for better UX
+- Created BankSetupModal component that wraps bank account setup in a Dialog for cleaner presentation
+- Integrated BankSetupModal into EditProfileSheet, allowing nested modal within overlay
+- Maintained all existing functionality while improving visual hierarchy and user flow
+
 ## System Architecture
 
 ### Frontend

@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
-import { Modal } from "@/components/ui/modal";
-import { CompanionProfileForm } from "@/components/companion/CompanionProfileForm";
+import { EditProfileSheet } from "@/components/companion/EditProfileSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -83,26 +82,6 @@ export default function CompanionDashboard() {
     },
   });
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("PATCH", "/api/companion/profile", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been saved successfully",
-      });
-      setIsProfileModalOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile",
-        variant: "destructive",
-      });
-    },
-  });
 
   const calculateTimeRemaining = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - Date.now();
@@ -344,25 +323,11 @@ export default function CompanionDashboard() {
         </div>
       </main>
 
-      {/* Profile Modal */}
-      <Modal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        title="Edit Profile"
-      >
-        <div className="max-h-[70vh] overflow-y-auto">
-          {profile && (
-            <CompanionProfileForm
-              profile={profile}
-              onSave={async (data) => {
-                await updateProfileMutation.mutateAsync(data);
-              }}
-              onSuccess={() => setIsProfileModalOpen(false)}
-              isLoading={updateProfileMutation.isPending}
-            />
-          )}
-        </div>
-      </Modal>
+      {/* Profile Sheet */}
+      <EditProfileSheet
+        open={isProfileModalOpen}
+        onOpenChange={setIsProfileModalOpen}
+      />
     </div>
   );
 }
