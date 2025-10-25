@@ -1,68 +1,22 @@
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 
 interface PaymentButtonProps {
-  email: string;
-  amount: number;
-  reference: string;
-  onSuccess: () => void;
-  onClose: () => void;
+  paymentUrl: string;
   disabled?: boolean;
   children?: React.ReactNode;
-}
-
-declare global {
-  interface Window {
-    PaystackPop?: {
-      setup: (config: any) => {
-        openIframe: () => void;
-      };
-    };
-  }
+  amount?: number;
 }
 
 export function PaymentButton({
-  email,
-  amount,
-  reference,
-  onSuccess,
-  onClose,
+  paymentUrl,
   disabled,
   children,
+  amount,
 }: PaymentButtonProps) {
-  useEffect(() => {
-    // Load Paystack inline script
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v1/inline.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   const handlePayment = () => {
-    if (!window.PaystackPop) {
-      alert("Payment system is loading. Please try again in a moment.");
-      return;
-    }
-
-    const handler = window.PaystackPop.setup({
-      key: "pk_test_PLACEHOLDER", // This will be replaced with actual public key from backend
-      email,
-      amount: Math.round(amount * 100), // Convert to kobo
-      ref: reference,
-      onSuccess: () => {
-        onSuccess();
-      },
-      onClose: () => {
-        onClose();
-      },
-    });
-
-    handler.openIframe();
+    // Open Paystack hosted payment page in new window
+    window.open(paymentUrl, "_blank", "width=600,height=700");
   };
 
   return (
@@ -80,7 +34,7 @@ export function PaymentButton({
       ) : (
         <>
           <CreditCard className="h-4 w-4 mr-2" />
-          {children || `Pay ₦${amount.toLocaleString()}`}
+          {children || (amount ? `Pay ₦${amount.toLocaleString()}` : "Pay Now")}
         </>
       )}
     </Button>

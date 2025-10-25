@@ -73,7 +73,13 @@ export function BankAccountSetup({ onSuccess, showCard = true }: BankAccountSetu
 
   const createSubaccountMutation = useMutation({
     mutationFn: async (data: BankAccountForm) => {
-      const response = await apiRequest("POST", "/api/companion/create-subaccount", data);
+      if (!verifiedAccountName) {
+        throw new Error("Please verify account first");
+      }
+      const response = await apiRequest("POST", "/api/companion/create-subaccount", {
+        ...data,
+        accountName: verifiedAccountName,
+      });
       return await response.json();
     },
     onSuccess: () => {
@@ -82,6 +88,8 @@ export function BankAccountSetup({ onSuccess, showCard = true }: BankAccountSetu
         description: "Your bank account has been successfully linked for payments.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
+      setVerifiedAccountName(null);
+      form.reset();
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {

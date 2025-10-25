@@ -391,11 +391,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Companion profile not found" });
       }
 
-      const { accountNumber, bankCode } = req.body;
+      const { accountNumber, bankCode, accountName } = req.body;
       const platformFee = parseFloat(await storage.getAdminSetting("platform_fee") || "20");
 
       const subaccount = await createSubaccount(
-        req.session.user.name || "Companion",
+        accountName || req.session.user.name || "Companion",
         accountNumber,
         bankCode,
         platformFee
@@ -404,6 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateCompanion(companion.id, {
         paystackSubaccountCode: subaccount.subaccount_code,
         bankAccountNumber: accountNumber,
+        bankAccountName: accountName,
         bankCode: bankCode,
       });
 
