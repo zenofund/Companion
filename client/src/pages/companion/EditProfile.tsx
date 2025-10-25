@@ -193,8 +193,13 @@ export default function EditProfile() {
     }
 
     try {
-      const base64 = await fileToBase64(file);
+      // Compress avatar to 512px max width, 0.8 quality
+      const base64 = await fileToBase64(file, 512, 0.8);
       form.setValue("avatar", base64);
+      toast({
+        title: "Avatar uploaded",
+        description: "Profile picture updated successfully",
+      });
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -231,7 +236,8 @@ export default function EditProfile() {
       }
 
       try {
-        const base64 = await fileToBase64(file);
+        // Compress gallery images to 1920px max width, 0.8 quality
+        const base64 = await fileToBase64(file, 1920, 0.8);
         newImages.push(base64);
       } catch (error) {
         errors.push(`Failed to process file ${i + 1}`);

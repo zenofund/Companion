@@ -1,12 +1,79 @@
 /**
- * Convert an image file to base64 data URL
+ * Compress and resize an image file
  */
-export async function fileToBase64(file: File): Promise<string> {
+export async function compressImage(
+  file: File,
+  maxWidth: number = 1920,
+  quality: number = 0.8
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Resize if image is too wide
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to compress image'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+    };
     reader.onerror = (error) => reject(error);
+  });
+}
+
+/**
+ * Convert an image file to base64 data URL with compression
+ */
+export async function fileToBase64(
+  file: File,
+  maxWidth: number = 1920,
+  quality: number = 0.8
+): Promise<string> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Compress the image first
+      const compressedBlob = await compressImage(file, maxWidth, quality);
+      
+      const reader = new FileReader();
+      reader.readAsDataURL(compressedBlob);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
