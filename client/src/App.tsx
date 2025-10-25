@@ -11,6 +11,7 @@ import Register from "@/pages/auth/Register";
 import ClientDashboard from "@/pages/dashboard/ClientDashboard";
 import CompanionDashboard from "@/pages/dashboard/CompanionDashboard";
 import AdminDashboard from "@/pages/dashboard/AdminDashboard";
+import CompanionOnboarding from "@/pages/onboarding/CompanionOnboarding";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/companion/:id" component={CompanionProfile} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/onboarding/companion" component={CompanionOnboarding} />
       <Route path="/dashboard/client" component={ClientDashboard} />
       <Route path="/dashboard/companion" component={CompanionDashboard} />
       <Route path="/dashboard/admin" component={AdminDashboard} />

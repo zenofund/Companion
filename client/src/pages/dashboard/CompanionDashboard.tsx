@@ -105,7 +105,14 @@ export default function CompanionDashboard() {
                   <Progress value={profileCompletion} className="h-2" />
                   <p className="text-xs text-muted-foreground mt-1">{profileCompletion}% complete</p>
                 </div>
-                <Button variant="default" size="sm">Complete Profile</Button>
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={() => setLocation("/onboarding/companion")}
+                  data-testid="button-complete-profile"
+                >
+                  Complete Profile
+                </Button>
               </div>
             </CardContent>
           </Card>
