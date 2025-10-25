@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Users, 
   DollarSign, 
@@ -13,14 +15,209 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Settings
+  Settings,
+  Activity,
+  Building2
 } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+
+interface PlatformStats {
+  totalUsers: number;
+  totalCompanions: number;
+  totalBookings: number;
+  totalRevenue: string;
+  pendingModeration: number;
+}
+
+interface PendingCompanion {
+  id: string;
+  userId: string;
+  city: string;
+  bio: string;
+  hourlyRate: string;
+  moderationStatus: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+}
+
+interface PlatformSettings {
+  platformFeePercentage: string;
+}
+
+interface AdminLog {
+  id: string;
+  adminId: string;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  details?: any;
+  createdAt: string;
+  adminName?: string;
+  adminEmail?: string;
+}
 
 export default function AdminDashboard() {
-  const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
-  const { data: stats } = useQuery({ queryKey: ["/api/admin/stats"] });
-  const { data: pendingCompanions } = useQuery({ queryKey: ["/api/admin/pending-companions"] });
-  const { data: flaggedContent } = useQuery({ queryKey: ["/api/admin/flagged-content"] });
+  const { toast } = useToast();
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectingCompanionId, setRejectingCompanionId] = useState<string | null>(null);
+  const [platformFeeInput, setPlatformFeeInput] = useState("");
+
+  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: stats } = useQuery<PlatformStats>({ 
+    queryKey: ["/api/admin/stats"],
+    enabled: user?.role === "admin",
+  });
+  
+  const { data: pendingCompanions } = useQuery<PendingCompanion[]>({ 
+    queryKey: ["/api/admin/pending-companions"],
+    enabled: user?.role === "admin",
+  });
+
+  const { data: settings } = useQuery<PlatformSettings>({
+    queryKey: ["/api/admin/settings"],
+    enabled: user?.role === "admin",
+  });
+
+  // Set platform fee input when settings load
+  useEffect(() => {
+    if (settings) {
+      setPlatformFeeInput(settings.platformFeePercentage);
+    }
+  }, [settings]);
+
+  const { data: logs } = useQuery<AdminLog[]>({
+    queryKey: ["/api/admin/logs"],
+    enabled: user?.role === "admin",
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (companionId: string) => {
+      return await apiRequest("POST", `/api/admin/companions/${companionId}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-companions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/logs"] });
+      toast({
+        title: "Success",
+        description: "Companion profile approved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve companion profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ companionId, reason }: { companionId: string; reason: string }) => {
+      return await apiRequest("POST", `/api/admin/companions/${companionId}/reject`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-companions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/logs"] });
+      setRejectingCompanionId(null);
+      setRejectReason("");
+      toast({
+        title: "Success",
+        description: "Companion profile rejected",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reject companion profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (platformFeePercentage: string) => {
+      return await apiRequest("PATCH", "/api/admin/settings", { platformFeePercentage });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/logs"] });
+      toast({
+        title: "Success",
+        description: "Platform settings updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update settings",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprove = (companionId: string) => {
+    approveMutation.mutate(companionId);
+  };
+
+  const handleReject = (companionId: string) => {
+    if (!rejectReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for rejection",
+        variant: "destructive",
+      });
+      return;
+    }
+    rejectMutation.mutate({ companionId, reason: rejectReason });
+  };
+
+  const handleSaveSettings = () => {
+    const fee = parseFloat(platformFeeInput);
+    if (isNaN(fee) || fee < 0 || fee > 100) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid percentage between 0 and 100",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateSettingsMutation.mutate(platformFeeInput);
+  };
+
+  const getActionLabel = (action: string) => {
+    const labels: Record<string, string> = {
+      approve_companion: "Approved Companion",
+      reject_companion: "Rejected Companion",
+      update_platform_fee: "Updated Platform Fee",
+    };
+    return labels[action] || action;
+  };
+
+  if (user?.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header user={user} />
+        <main className="pt-16 container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="p-12 text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+              <p className="text-lg font-semibold">Access Denied</p>
+              <p className="text-muted-foreground">You do not have permission to access this page</p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,7 +234,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -47,20 +244,29 @@ export default function AdminDashboard() {
               <div className="text-2xl font-bold" data-testid="stat-total-users">
                 {stats?.totalUsers || 0}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.newUsers || 0} new this week
-              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Bookings</CardTitle>
+              <CardTitle className="text-sm font-medium">Companions</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="stat-total-companions">
+                {stats?.totalCompanions || 0}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bookings</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-active-bookings">
-                {stats?.activeBookings || 0}
+              <div className="text-2xl font-bold" data-testid="stat-total-bookings">
+                {stats?.totalBookings || 0}
               </div>
             </CardContent>
           </Card>
@@ -72,22 +278,19 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="stat-revenue">
-                ${stats?.platformRevenue || "0.00"}
+                ₦{parseFloat(stats?.totalRevenue || "0").toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground">
-                This month
-              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-pending-reviews">
-                {stats?.pendingReviews || 0}
+              <div className="text-2xl font-bold" data-testid="stat-pending-moderation">
+                {stats?.pendingModeration || 0}
               </div>
             </CardContent>
           </Card>
@@ -97,56 +300,122 @@ export default function AdminDashboard() {
         <Tabs defaultValue="companions" className="w-full">
           <TabsList>
             <TabsTrigger value="companions" data-testid="tab-companions">
-              Companion Verification
-            </TabsTrigger>
-            <TabsTrigger value="content" data-testid="tab-content">
-              Flagged Content
+              Companion Moderation ({stats?.pendingModeration || 0})
             </TabsTrigger>
             <TabsTrigger value="settings" data-testid="tab-settings">
-              Settings
+              Platform Settings
+            </TabsTrigger>
+            <TabsTrigger value="activity" data-testid="tab-activity">
+              Activity Logs
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="companions" className="mt-6">
             <div className="space-y-4">
               {pendingCompanions && pendingCompanions.length > 0 ? (
-                pendingCompanions.map((companion: any) => (
+                pendingCompanions.map((companion) => (
                   <Card key={companion.id} data-testid={`companion-review-${companion.id}`}>
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <h3 className="font-heading text-lg font-semibold mb-2">
-                            {companion.name}
-                          </h3>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="flex items-center gap-3 mb-3">
+                            {companion.user.avatar && (
+                              <img 
+                                src={companion.user.avatar} 
+                                alt={companion.user.name}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            )}
                             <div>
-                              <p className="text-muted-foreground">Email</p>
-                              <p className="font-medium">{companion.email}</p>
+                              <h3 className="font-heading text-lg font-semibold">
+                                {companion.user.name}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">{companion.user.email}</p>
                             </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
                             <div>
                               <p className="text-muted-foreground">City</p>
                               <p className="font-medium">{companion.city}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Rate</p>
-                              <p className="font-medium">${companion.hourlyRate}/hr</p>
+                              <p className="text-muted-foreground">Hourly Rate</p>
+                              <p className="font-medium">₦{parseFloat(companion.hourlyRate).toLocaleString()}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Submitted</p>
-                              <p className="font-medium">{new Date(companion.createdAt).toLocaleDateString()}</p>
+                              <p className="font-medium">{format(new Date(companion.createdAt), "MMM d, yyyy")}</p>
                             </div>
                           </div>
+
+                          {companion.bio && (
+                            <div className="mb-4">
+                              <p className="text-sm text-muted-foreground mb-1">Bio</p>
+                              <p className="text-sm">{companion.bio}</p>
+                            </div>
+                          )}
+
+                          {rejectingCompanionId === companion.id && (
+                            <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                              <Label htmlFor={`reject-reason-${companion.id}`}>Rejection Reason</Label>
+                              <Textarea
+                                id={`reject-reason-${companion.id}`}
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Provide a reason for rejection..."
+                                className="mt-2"
+                                data-testid={`textarea-reject-reason-${companion.id}`}
+                              />
+                              <div className="flex gap-2 mt-4">
+                                <Button
+                                  onClick={() => handleReject(companion.id)}
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={rejectMutation.isPending}
+                                  data-testid={`button-confirm-reject-${companion.id}`}
+                                >
+                                  Confirm Rejection
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    setRejectingCompanionId(null);
+                                    setRejectReason("");
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  data-testid={`button-cancel-reject-${companion.id}`}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="default" size="sm" data-testid={`button-approve-${companion.id}`}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve
-                          </Button>
-                          <Button variant="destructive" size="sm" data-testid={`button-reject-${companion.id}`}>
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Reject
-                          </Button>
-                        </div>
+
+                        {rejectingCompanionId !== companion.id && (
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              onClick={() => handleApprove(companion.id)}
+                              disabled={approveMutation.isPending}
+                              data-testid={`button-approve-${companion.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setRejectingCompanionId(companion.id)}
+                              data-testid={`button-reject-${companion.id}`}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -164,17 +433,6 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="content" className="mt-6">
-            <Card>
-              <CardContent className="p-12 text-center">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground" data-testid="text-no-flagged">
-                  No flagged content
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="settings" className="mt-6">
             <Card>
               <CardHeader>
@@ -182,30 +440,88 @@ export default function AdminDashboard() {
                   <Settings className="h-5 w-5" />
                   Platform Configuration
                 </CardTitle>
+                <CardDescription>
+                  Manage platform-wide settings and payment splits
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Platform Fee Percentage
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      defaultValue={[20]}
-                      max={50}
-                      step={1}
-                      className="flex-1"
-                      data-testid="slider-platform-fee"
+                  <Label htmlFor="platform-fee">Platform Fee Percentage</Label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Input
+                      id="platform-fee"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={platformFeeInput}
+                      onChange={(e) => setPlatformFeeInput(e.target.value)}
+                      className="max-w-[200px]"
+                      data-testid="input-platform-fee"
                     />
-                    <span className="font-semibold min-w-[4rem]">20%</span>
+                    <span className="text-muted-foreground">%</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Platform takes 20%, companion receives 80% of each booking
+                    Platform takes {platformFeeInput}%, companion receives {100 - parseFloat(platformFeeInput || "0")}% of each booking
                   </p>
                 </div>
 
-                <Button data-testid="button-save-settings">
-                  Save Changes
+                <Button 
+                  onClick={handleSaveSettings}
+                  disabled={updateSettingsMutation.isPending}
+                  data-testid="button-save-settings"
+                >
+                  {updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Admin Activity Logs
+                </CardTitle>
+                <CardDescription>
+                  Recent admin actions and system events
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {logs && logs.length > 0 ? (
+                    logs.map((log) => (
+                      <div 
+                        key={log.id} 
+                        className="flex items-start gap-4 p-4 border rounded-lg"
+                        data-testid={`log-entry-${log.id}`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline">{getActionLabel(log.action)}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(log.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                            </span>
+                          </div>
+                          <p className="text-sm">
+                            By: <span className="font-medium">{log.adminName || log.adminEmail || "Admin"}</span>
+                          </p>
+                          {log.details && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {JSON.stringify(log.details)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center p-8 text-muted-foreground">
+                      <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p data-testid="text-no-logs">No activity logs yet</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
