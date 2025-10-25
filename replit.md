@@ -10,13 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 25, 2025 - Booking Payment Fix & Complete Redesign**
-- Completely redesigned booking modal with proper Calendar component date picker
+**October 25, 2025 - Booking Payment Fix & Simple Calendar**
+- Redesigned booking modal with simple native HTML5 date and time inputs
+- Uses device's built-in calendar picker for clean, reliable date selection
 - Fixed backend validation to use custom Zod schema that transforms ISO date strings to Date objects
 - Separated date and time fields with proper form validation for both
 - Fixed Paystack payment flow - now properly creates booking and redirects to payment
-- Backend now correctly handles ISO string dates from frontend and converts them for database
-- Payment endpoint tested and working - redirects to Paystack authorization URL
+- Backend correctly handles ISO string dates from frontend and converts them for database
 
 **October 25, 2025 - Authentication & Mobile UX Fixes**
 - Fixed critical authentication bug where users appeared logged out when viewing companion profiles
