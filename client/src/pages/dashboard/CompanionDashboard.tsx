@@ -95,14 +95,14 @@ export default function CompanionDashboard() {
     
     if (profile.bio) completed++;
     if (profile.city) completed++;
-    if (profile.hourlyRate && profile.hourlyRate > 0) completed++;
+    if (profile.hourlyRate && parseFloat(profile.hourlyRate) > 0) completed++;
     if (profile.services && profile.services.length > 0) completed++;
     if (profile.interests && profile.interests.length > 0) completed++;
     if (profile.languages && profile.languages.length > 0) completed++;
     if (profile.gallery && profile.gallery.length > 0) completed++;
     if (profile.bankAccountNumber) completed++;
     if (profile.paystackSubaccountCode) completed++; // Banking setup
-    if (profile.verificationStatus === "approved") completed++; // Admin verification
+    if (profile.moderationStatus === "approved") completed++; // Admin verification
     
     return Math.round((completed / totalFields) * 100);
   }, [profile]);

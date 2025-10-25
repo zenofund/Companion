@@ -19,11 +19,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
-      <Route path="/companion/:id" component={CompanionProfile} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/onboarding/companion" component={CompanionOnboarding} />
+      {/* Specific routes must come before dynamic routes */}
       <Route path="/companion/edit-profile" component={EditProfile} />
+      <Route path="/companion/:id" component={CompanionProfile} />
       <Route path="/booking/:id/chat" component={BookingChat} />
       <Route path="/dashboard/client" component={ClientDashboard} />
       <Route path="/dashboard/companion" component={CompanionDashboard} />

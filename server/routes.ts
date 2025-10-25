@@ -340,6 +340,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/companions/:id", async (req, res) => {
     try {
+      // Validate UUID format to prevent matching non-ID routes
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(req.params.id)) {
+        return res.status(404).json({ message: "Invalid companion ID" });
+      }
+
       const companion = await storage.getCompanion(req.params.id);
       if (!companion) {
         return res.status(404).json({ message: "Companion not found" });
