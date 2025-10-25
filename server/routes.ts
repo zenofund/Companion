@@ -42,12 +42,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const data = JSON.parse(message.toString());
 
-        if (data.type === 'auth' && data.userId) {
+        if (data.type === 'auth' && typeof data.userId === 'string') {
           userId = data.userId;
-          if (!clients.has(userId)) {
-            clients.set(userId, new Set());
+          if (!clients.has(data.userId)) {
+            clients.set(data.userId, new Set());
           }
-          clients.get(userId)!.add(ws);
+          clients.get(data.userId)!.add(ws);
         } else if (data.type === 'message' && userId) {
           // Save message to database
           const msg = await storage.createMessage({
