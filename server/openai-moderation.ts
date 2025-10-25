@@ -39,13 +39,14 @@ export async function moderateText(text: string): Promise<{
   }
 }
 
-export async function moderateImage(imageUrl: string): Promise<{
+export async function moderateImage(imageDataOrUrl: string): Promise<{
   flagged: boolean;
   categories: string[];
 }> {
   try {
     const client = getOpenAIClient();
     // Use GPT-5 vision to analyze image content
+    // Supports both data URLs (data:image/...) and regular URLs
     const response = await client.chat.completions.create({
       model: "gpt-5",
       messages: [
@@ -58,7 +59,7 @@ export async function moderateImage(imageUrl: string): Promise<{
           content: [
             {
               type: "image_url",
-              image_url: { url: imageUrl },
+              image_url: { url: imageDataOrUrl },
             },
           ],
         },

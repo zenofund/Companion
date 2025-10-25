@@ -393,8 +393,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { avatar, ...companionData } = req.body;
       const data = insertCompanionSchema.parse(companionData);
 
-      // Update user avatar if provided
+      // Moderate avatar if provided
       if (avatar) {
+        const avatarModeration = await moderateImage(avatar);
+        if (avatarModeration.flagged) {
+          return res.status(400).json({ message: "Inappropriate content in profile picture" });
+        }
         await storage.updateUser(req.session.user.id, { avatar });
       }
 
@@ -403,6 +407,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const moderation = await moderateText(data.bio);
         if (moderation.flagged) {
           return res.status(400).json({ message: "Inappropriate content in bio" });
+        }
+      }
+
+      // Moderate gallery images if provided
+      if (data.gallery && data.gallery.length > 0) {
+        for (const image of data.gallery) {
+          const imageModeration = await moderateImage(image);
+          if (imageModeration.flagged) {
+            return res.status(400).json({ message: "Inappropriate content in gallery images" });
+          }
         }
       }
 
@@ -431,8 +445,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { avatar, ...companionData } = req.body;
       const data = insertCompanionSchema.omit({ userId: true }).partial().parse(companionData);
 
-      // Update user avatar if provided
+      // Moderate avatar if provided
       if (avatar !== undefined) {
+        const avatarModeration = await moderateImage(avatar);
+        if (avatarModeration.flagged) {
+          return res.status(400).json({ message: "Inappropriate content in profile picture" });
+        }
         await storage.updateUser(req.session.user.id, { avatar });
       }
 
@@ -441,6 +459,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const moderation = await moderateText(data.bio);
         if (moderation.flagged) {
           return res.status(400).json({ message: "Inappropriate content in bio" });
+        }
+      }
+
+      // Moderate gallery images if provided
+      if (data.gallery && data.gallery.length > 0) {
+        for (const image of data.gallery) {
+          const imageModeration = await moderateImage(image);
+          if (imageModeration.flagged) {
+            return res.status(400).json({ message: "Inappropriate content in gallery images" });
+          }
         }
       }
 
