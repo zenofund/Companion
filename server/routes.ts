@@ -11,6 +11,7 @@ import {
   getBanks 
 } from "./paystack";
 import bcrypt from "bcryptjs";
+import cookie from "cookie";
 import { insertUserSchema, insertCompanionSchema, insertBookingSchema } from "@shared/schema";
 
 // Session user interface
@@ -43,12 +44,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const data = JSON.parse(message.toString());
 
         if (data.type === 'auth' && typeof data.userId === 'string') {
+          // Validate user exists
+          const user = await storage.getUser(data.userId);
+          if (!user) {
+            ws.close(4001, 'User not found');
+            return;
+          }
+
           userId = data.userId;
           if (!clients.has(data.userId)) {
             clients.set(data.userId, new Set());
           }
           clients.get(data.userId)!.add(ws);
+          
+          // Send auth success
+          ws.send(JSON.stringify({ type: 'auth', success: true }));
         } else if (data.type === 'message' && userId) {
+          // Verify booking exists and user is a participant
+          const booking = await storage.getBooking(data.bookingId);
+          if (!booking) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Booking not found' 
+            }));
+            return;
+          }
+
+          // Get companion to check userId
+          const companion = await storage.getCompanion(booking.companionId);
+          if (!companion) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Companion not found' 
+            }));
+            return;
+          }
+
+          // Verify user is part of this booking
+          const isClient = booking.clientId === userId;
+          const isCompanion = companion.userId === userId;
+          
+          if (!isClient && !isCompanion) {
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              message: 'Not authorized for this booking' 
+            }));
+            return;
+          }
+
           // Save message to database
           const msg = await storage.createMessage({
             bookingId: data.bookingId,
@@ -56,14 +99,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             content: data.content,
           });
 
-          // Broadcast to participants
-          const booking = await storage.getBooking(data.bookingId);
-          if (booking) {
-            const recipientId = booking.clientId === userId ? booking.companionId : booking.clientId;
-            const recipientSockets = clients.get(recipientId);
-
-            if (recipientSockets) {
-              recipientSockets.forEach(socket => {
+          // Broadcast to all participants (including sender for echo)
+          const participantIds = [booking.clientId, companion.userId];
+          
+          participantIds.forEach(participantId => {
+            const sockets = clients.get(participantId);
+            if (sockets) {
+              sockets.forEach(socket => {
                 if (socket.readyState === WebSocket.OPEN) {
                   socket.send(JSON.stringify({
                     type: 'message',
@@ -72,10 +114,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               });
             }
-          }
+          });
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
+        ws.send(JSON.stringify({ 
+          type: 'error', 
+          message: 'Internal server error' 
+        }));
       }
     });
 

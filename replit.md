@@ -41,6 +41,7 @@ Preferred communication style: Simple, everyday language.
 - Companion Profile: Detailed view with booking modal
 - Client Dashboard: Booking management and history
 - Companion Dashboard: Request handling and availability
+- Booking Chat: Real-time messaging for active bookings with booking details sidebar
 - Admin Dashboard: Platform oversight and moderation
 
 ### Backend Architecture
@@ -59,17 +60,23 @@ Preferred communication style: Simple, everyday language.
 - Role-based access control (client, companion, admin)
 
 **Real-time Communication:**
-- WebSocket server for chat messaging
-- Connection path: `/ws`
-- Client-based connection tracking with user ID mapping
-- Message broadcasting to specific users
+- WebSocket server for chat messaging at path `/ws`
+- User authentication validation on connection
+- Booking membership verification before message broadcast
+- Server-side message echo to all participants (including sender)
+- Error handling for unauthorized access attempts
+- Automatic reconnection on disconnect
+- Client connection tracking with user ID mapping
 
 **API Endpoints Pattern:**
 - User authentication: `/api/auth/*`
 - Companion management: `/api/companions/*`
 - Booking operations: `/api/bookings/*`
 - Payment processing: `/api/payments/*`
-- Chat messaging: WebSocket `/ws`
+- Chat messaging: 
+  - WebSocket `/ws` for real-time messaging
+  - GET `/api/bookings/:bookingId/messages` for message history
+  - POST `/api/bookings/:bookingId/messages/read` to mark messages as read
 - Admin operations: `/api/admin/*`
 
 ### Data Storage Architecture
@@ -154,4 +161,53 @@ Core Tables:
 - Content moderation before publication
 - Role-based authorization checks
 - Secure payment handling (no client-side secrets)
-- WebSocket authentication via user ID verification
+- WebSocket authentication:
+  - User existence validation on connection
+  - Booking membership verification before message operations
+  - Authorization checks prevent cross-booking message access
+  - Error responses for unauthorized attempts
+
+## Recent Changes
+
+### Real-time Chat Implementation (Completed)
+**Date:** October 25, 2025
+
+**Features Implemented:**
+1. **WebSocket Infrastructure:**
+   - Custom WebSocket hook (`useWebSocket`) for connection management
+   - Automatic reconnection on disconnect
+   - Connection status indicator
+   - Error handling and logging
+
+2. **Chat UI Component:**
+   - Message bubbles with distinct colors (green for sender, yellow for receiver)
+   - Timestamp display in 12-hour format
+   - Auto-scroll to latest message
+   - Input field with send button
+   - Loading states and empty states
+
+3. **Booking Chat Page:**
+   - Integrated chat with booking details sidebar
+   - Displays booking status, date, location, amount
+   - Shows special requests if any
+   - Navigation back to dashboard
+   - Responsive layout (sidebar + chat)
+
+4. **Security Enhancements:**
+   - User validation on WebSocket connection
+   - Booking membership verification before message broadcast
+   - Only booking participants (client and companion) can access chat
+   - Server echoes messages to all participants including sender
+   - Prevents unauthorized cross-booking message access
+
+5. **API Endpoints:**
+   - GET `/api/bookings/:bookingId/messages` - Fetch message history with authorization
+   - POST `/api/bookings/:bookingId/messages/read` - Mark messages as read
+   - WebSocket `/ws` - Real-time messaging with auth and error handling
+
+**Technical Implementation:**
+- Message history fetched via REST API on page load
+- Real-time updates via WebSocket
+- Server-side message echo eliminates optimistic update failures
+- Duplicate message detection by ID prevents display issues
+- Companion user ID resolution for proper participant identification

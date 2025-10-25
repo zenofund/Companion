@@ -46,11 +46,20 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
     userId: currentUserId,
     onMessage: (wsMessage) => {
       if (wsMessage.type === 'message' && wsMessage.data) {
-        setMessages((prev) => [...prev, wsMessage.data]);
+        setMessages((prev) => {
+          // Check if message already exists (by id)
+          const exists = prev.some(m => m.id === wsMessage.data.id);
+          if (exists) {
+            return prev;
+          }
+          return [...prev, wsMessage.data];
+        });
         // Scroll to bottom
         setTimeout(() => {
           scrollRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
+      } else if (wsMessage.type === 'error') {
+        console.error('WebSocket error:', wsMessage.message);
       }
     },
   });
@@ -67,22 +76,8 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
     const success = sendWsMessage(bookingId, trimmedMessage);
     
     if (success) {
-      // Optimistically add to local state
-      const tempMessage: Message = {
-        id: `temp-${Date.now()}`,
-        bookingId,
-        senderId: currentUserId,
-        content: trimmedMessage,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, tempMessage]);
       setInputMessage("");
-      
-      // Scroll to bottom
-      setTimeout(() => {
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      // Server will echo the message back, no need for optimistic update
     }
   };
 
