@@ -10,6 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025 - Date Picker Fix**
+- Fixed booking date picker to properly close popover after date selection
+- Added state management for better UX feedback when selecting dates
+- Date now displays immediately in the button after selection
+
 **October 25, 2025 - Authentication & Mobile UX Fixes**
 - Fixed critical authentication bug where users appeared logged out when viewing companion profiles
 - Added proper user prop passing to Header component across all CompanionProfile page states

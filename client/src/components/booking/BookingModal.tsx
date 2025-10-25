@@ -41,6 +41,7 @@ interface BookingModalProps {
 export function BookingModal({ open, onOpenChange, companion }: BookingModalProps) {
   const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState("12:00");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const form = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
@@ -115,7 +116,7 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <Popover>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -141,6 +142,7 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
                         selected={field.value}
                         onSelect={(date) => {
                           field.onChange(date);
+                          setDatePickerOpen(false);
                         }}
                         disabled={(date) => {
                           const today = new Date();
