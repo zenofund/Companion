@@ -69,18 +69,18 @@ export default function AdminDashboard() {
   const [rejectingCompanionId, setRejectingCompanionId] = useState<string | null>(null);
   const [platformFeeInput, setPlatformFeeInput] = useState("");
 
-  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
-  const { data: stats } = useQuery<PlatformStats>({ 
+  const { data: user, isLoading: userLoading } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: stats, isLoading: statsLoading } = useQuery<PlatformStats>({ 
     queryKey: ["/api/admin/stats"],
     enabled: user?.role === "admin",
   });
   
-  const { data: pendingCompanions } = useQuery<PendingCompanion[]>({ 
+  const { data: pendingCompanions, isLoading: companionsLoading } = useQuery<PendingCompanion[]>({ 
     queryKey: ["/api/admin/pending-companions"],
     enabled: user?.role === "admin",
   });
 
-  const { data: settings } = useQuery<PlatformSettings>({
+  const { data: settings, isLoading: settingsLoading } = useQuery<PlatformSettings>({
     queryKey: ["/api/admin/settings"],
     enabled: user?.role === "admin",
   });
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
     }
   }, [settings]);
 
-  const { data: logs } = useQuery<AdminLog[]>({
+  const { data: logs, isLoading: logsLoading } = useQuery<AdminLog[]>({
     queryKey: ["/api/admin/logs"],
     enabled: user?.role === "admin",
   });
@@ -110,10 +110,10 @@ export default function AdminDashboard() {
         description: "Companion profile approved successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to approve companion profile",
+        description: error.message || "Failed to approve companion profile",
         variant: "destructive",
       });
     },
@@ -134,10 +134,10 @@ export default function AdminDashboard() {
         description: "Companion profile rejected",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to reject companion profile",
+        description: error.message || "Failed to reject companion profile",
         variant: "destructive",
       });
     },
@@ -155,10 +155,10 @@ export default function AdminDashboard() {
         description: "Platform settings updated successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update settings",
+        description: error.message || "Failed to update settings",
         variant: "destructive",
       });
     },
@@ -202,6 +202,23 @@ export default function AdminDashboard() {
     return labels[action] || action;
   };
 
+  // Show loading state while checking authentication
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header user={user} />
+        <main className="pt-16 container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background">
@@ -241,9 +258,13 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-total-users">
-                {stats?.totalUsers || 0}
-              </div>
+              {statsLoading ? (
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              ) : (
+                <div className="text-2xl font-bold" data-testid="stat-total-users">
+                  {stats?.totalUsers || 0}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -253,9 +274,13 @@ export default function AdminDashboard() {
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-total-companions">
-                {stats?.totalCompanions || 0}
-              </div>
+              {statsLoading ? (
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              ) : (
+                <div className="text-2xl font-bold" data-testid="stat-total-companions">
+                  {stats?.totalCompanions || 0}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -265,9 +290,13 @@ export default function AdminDashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-total-bookings">
-                {stats?.totalBookings || 0}
-              </div>
+              {statsLoading ? (
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              ) : (
+                <div className="text-2xl font-bold" data-testid="stat-total-bookings">
+                  {stats?.totalBookings || 0}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -277,9 +306,13 @@ export default function AdminDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-revenue">
-                ₦{parseFloat(stats?.totalRevenue || "0").toLocaleString()}
-              </div>
+              {statsLoading ? (
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              ) : (
+                <div className="text-2xl font-bold" data-testid="stat-revenue">
+                  ₦{parseFloat(stats?.totalRevenue || "0").toLocaleString()}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -289,9 +322,13 @@ export default function AdminDashboard() {
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-pending-moderation">
-                {stats?.pendingModeration || 0}
-              </div>
+              {statsLoading ? (
+                <div className="h-8 bg-muted animate-pulse rounded"></div>
+              ) : (
+                <div className="text-2xl font-bold" data-testid="stat-pending-moderation">
+                  {stats?.pendingModeration || 0}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -312,7 +349,14 @@ export default function AdminDashboard() {
 
           <TabsContent value="companions" className="mt-6">
             <div className="space-y-4">
-              {pendingCompanions && pendingCompanions.length > 0 ? (
+              {companionsLoading ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading pending companions...</p>
+                  </CardContent>
+                </Card>
+              ) : pendingCompanions && pendingCompanions.length > 0 ? (
                 pendingCompanions.map((companion) => (
                   <Card key={companion.id} data-testid={`companion-review-${companion.id}`}>
                     <CardContent className="p-6">
@@ -445,34 +489,43 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <Label htmlFor="platform-fee">Platform Fee Percentage</Label>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Input
-                      id="platform-fee"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={platformFeeInput}
-                      onChange={(e) => setPlatformFeeInput(e.target.value)}
-                      className="max-w-[200px]"
-                      data-testid="input-platform-fee"
-                    />
-                    <span className="text-muted-foreground">%</span>
+                {settingsLoading ? (
+                  <div className="space-y-4">
+                    <div className="h-20 bg-muted animate-pulse rounded"></div>
+                    <div className="h-10 w-32 bg-muted animate-pulse rounded"></div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Platform takes {platformFeeInput}%, companion receives {100 - parseFloat(platformFeeInput || "0")}% of each booking
-                  </p>
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label htmlFor="platform-fee">Platform Fee Percentage</Label>
+                      <div className="flex items-center gap-4 mt-2">
+                        <Input
+                          id="platform-fee"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={platformFeeInput}
+                          onChange={(e) => setPlatformFeeInput(e.target.value)}
+                          className="max-w-[200px]"
+                          data-testid="input-platform-fee"
+                        />
+                        <span className="text-muted-foreground">%</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Platform takes {platformFeeInput}%, companion receives {100 - parseFloat(platformFeeInput || "0")}% of each booking
+                      </p>
+                    </div>
 
-                <Button 
-                  onClick={handleSaveSettings}
-                  disabled={updateSettingsMutation.isPending}
-                  data-testid="button-save-settings"
-                >
-                  {updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
+                    <Button 
+                      onClick={handleSaveSettings}
+                      disabled={updateSettingsMutation.isPending}
+                      data-testid="button-save-settings"
+                    >
+                      {updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -490,7 +543,12 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {logs && logs.length > 0 ? (
+                  {logsLoading ? (
+                    <div className="text-center p-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Loading activity logs...</p>
+                    </div>
+                  ) : logs && logs.length > 0 ? (
                     logs.map((log) => (
                       <div 
                         key={log.id} 
