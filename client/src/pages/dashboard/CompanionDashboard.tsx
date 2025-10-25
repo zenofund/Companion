@@ -108,10 +108,10 @@ export default function CompanionDashboard() {
                 <Button 
                   variant="default" 
                   size="sm"
-                  onClick={() => setLocation("/onboarding/companion")}
+                  onClick={() => setLocation(profile ? "/companion/edit-profile" : "/onboarding/companion")}
                   data-testid="button-complete-profile"
                 >
-                  Complete Profile
+                  {profile ? "Edit Profile" : "Complete Profile"}
                 </Button>
               </div>
             </CardContent>

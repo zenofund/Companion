@@ -314,6 +314,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/companion/profile", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "companion") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const companion = await storage.getCompanionByUserId(req.session.user.id);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion profile not found" });
+      }
+
+      const data = insertCompanionSchema.partial().parse(req.body);
+
+      // Moderate bio if provided
+      if (data.bio) {
+        const moderation = await moderateText(data.bio);
+        if (moderation.flagged) {
+          return res.status(400).json({ message: "Inappropriate content in bio" });
+        }
+      }
+
+      const updated = await storage.updateCompanion(companion.id, data);
+
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
   app.patch("/api/companion/availability", async (req, res) => {
     if (!req.session.user || req.session.user.role !== "companion") {
       return res.status(403).json({ message: "Not authorized" });
