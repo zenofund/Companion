@@ -171,19 +171,29 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(bookings.createdAt));
   }
 
-  async getCompanionBookings(companionId: string): Promise<Booking[]> {
-    return await db
-      .select()
+  async getCompanionBookings(companionId: string): Promise<any[]> {
+    const results = await db
+      .select({
+        booking: bookings,
+        payment: payments,
+      })
       .from(bookings)
+      .leftJoin(payments, eq(bookings.id, payments.bookingId))
       .where(eq(bookings.companionId, companionId))
       .orderBy(desc(bookings.createdAt));
+    
+    return results.map(r => ({ ...r.booking, payment: r.payment }));
   }
 
-  async getPendingBookings(companionId: string): Promise<Booking[]> {
+  async getPendingBookings(companionId: string): Promise<any[]> {
     const now = new Date();
-    return await db
-      .select()
+    const results = await db
+      .select({
+        booking: bookings,
+        client: users,
+      })
       .from(bookings)
+      .leftJoin(users, eq(bookings.clientId, users.id))
       .where(
         and(
           eq(bookings.companionId, companionId),
@@ -192,6 +202,11 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(bookings.requestExpiresAt);
+    
+    return results.map(r => ({
+      ...r.booking,
+      clientName: r.client?.name || "Unknown",
+    }));
   }
 
   // Payments

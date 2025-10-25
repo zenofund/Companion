@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,35 @@ import {
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Companion } from "@shared/schema";
+
+interface CompanionStats {
+  activeBookings: number;
+  todayEarnings: string;
+  responseRate: string;
+  averageRating: string;
+  totalHours: number;
+  acceptanceRate: string;
+}
+
+interface PendingBooking {
+  id: string;
+  clientName: string;
+  bookingDate: string;
+  hours: number;
+  totalAmount: string;
+  meetingLocation: string;
+  specialRequests?: string;
+  requestExpiresAt: string;
+}
 
 export default function CompanionDashboard() {
   const { toast } = useToast();
-  const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
-  const { data: profile } = useQuery({ queryKey: ["/api/companion/profile"] });
-  const { data: pendingRequests } = useQuery({ queryKey: ["/api/bookings/pending"] });
-  const { data: stats } = useQuery({ queryKey: ["/api/stats/companion"] });
+  const [, setLocation] = useLocation();
+  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: profile } = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
+  const { data: pendingRequests } = useQuery<PendingBooking[]>({ queryKey: ["/api/bookings/pending"] });
+  const { data: stats } = useQuery<CompanionStats>({ queryKey: ["/api/stats/companion"] });
 
   const toggleAvailabilityMutation = useMutation({
     mutationFn: async (isAvailable: boolean) => {
@@ -59,7 +82,24 @@ export default function CompanionDashboard() {
     return minutes > 0 ? `${minutes}m remaining` : "Expired";
   };
 
-  const profileCompletion = 75; // Calculate based on filled fields
+  // Calculate profile completion based on filled fields
+  const profileCompletion = useMemo(() => {
+    if (!profile) return 0;
+    
+    let completed = 0;
+    const totalFields = 8;
+    
+    if (profile.bio) completed++;
+    if (profile.city) completed++;
+    if (profile.hourlyRate) completed++;
+    if (profile.services && profile.services.length > 0) completed++;
+    if (profile.interests && profile.interests.length > 0) completed++;
+    if (profile.languages && profile.languages.length > 0) completed++;
+    if (profile.gallery && profile.gallery.length > 0) completed++;
+    if (profile.bankAccountNumber) completed++;
+    
+    return Math.round((completed / totalFields) * 100);
+  }, [profile]);
 
   return (
     <div className="min-h-screen bg-background">
