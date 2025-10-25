@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { Modal } from "@/components/ui/modal";
+import { CompanionProfileForm } from "@/components/companion/CompanionProfileForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -78,6 +79,27 @@ export default function CompanionDashboard() {
         description: variables.action === "accept" 
           ? "Booking accepted successfully" 
           : "Booking declined",
+      });
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PATCH", "/api/companion/profile", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/companion/profile"] });
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been saved successfully",
+      });
+      setIsProfileModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
       });
     },
   });
@@ -328,11 +350,16 @@ export default function CompanionDashboard() {
         onClose={() => setIsProfileModalOpen(false)}
         title="Edit Profile"
       >
-        <iframe
-          src="/companion/edit-profile"
-          className="w-full h-[70vh] border-0"
-          title="Edit Profile"
-        />
+        <div className="max-h-[70vh] overflow-y-auto">
+          {profile && (
+            <CompanionProfileForm
+              profile={profile}
+              onSave={async (data) => await updateProfileMutation.mutateAsync(data)}
+              onSuccess={() => setIsProfileModalOpen(false)}
+              isLoading={updateProfileMutation.isPending}
+            />
+          )}
+        </div>
       </Modal>
     </div>
   );
