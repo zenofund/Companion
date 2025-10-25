@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { BookingModal } from "@/components/booking/BookingModal";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { calculateAge } from "@/lib/utils";
 import { 
   MapPin, 
   Calendar, 
@@ -45,13 +46,30 @@ interface Companion {
 
 export default function CompanionProfile() {
   const [, params] = useRoute("/companion/:id");
+  const [, setLocation] = useLocation();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+  const { data: user, isLoading: userLoading } = useQuery({ queryKey: ["/api/auth/me"] });
   const { data: companion, isLoading} = useQuery<Companion>({
     queryKey: ["/api/companions", params?.id],
     enabled: !!params?.id,
   });
+
+  const handleBookNowClick = () => {
+    // Don't proceed if still loading auth state
+    if (userLoading) {
+      return;
+    }
+    
+    // Redirect to login if not authenticated
+    if (!user) {
+      setLocation("/login");
+      return;
+    }
+    
+    setShowBookingModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -75,7 +93,7 @@ export default function CompanionProfile() {
     );
   }
 
-  const age = 25; // Calculate from dateOfBirth
+  const age = calculateAge(companion.dateOfBirth);
   const heroImage = companion.gallery?.[0] || "/placeholder-profile.jpg";
 
   return (
@@ -142,15 +160,17 @@ export default function CompanionProfile() {
                         </p>
                       </div>
 
-                      <div className="text-center md:text-left">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                          <Calendar className="h-4 w-4" />
-                          <span className="text-sm">Age</span>
+                      {age && (
+                        <div className="text-center md:text-left">
+                          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Calendar className="h-4 w-4" />
+                            <span className="text-sm">Age</span>
+                          </div>
+                          <p className="font-heading text-2xl font-semibold" data-testid="text-age">
+                            {age} yrs
+                          </p>
                         </div>
-                        <p className="font-heading text-2xl font-semibold" data-testid="text-age">
-                          {age} yrs
-                        </p>
-                      </div>
+                      )}
 
                       <div className="text-center md:text-left">
                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -331,10 +351,11 @@ export default function CompanionProfile() {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t md:hidden">
           <Button 
             className="w-full h-14 text-lg"
-            onClick={() => setShowBookingModal(true)}
+            onClick={handleBookNowClick}
+            disabled={userLoading}
             data-testid="button-book-now-mobile"
           >
-            Book Now - ₦{companion.hourlyRate}/hr
+            {userLoading ? "Loading..." : `Book Now - ₦${companion.hourlyRate}/hr`}
           </Button>
         </div>
 
@@ -342,10 +363,11 @@ export default function CompanionProfile() {
           <Button 
             size="lg" 
             className="h-14 px-8 text-lg shadow-lg"
-            onClick={() => setShowBookingModal(true)}
+            onClick={handleBookNowClick}
+            disabled={userLoading}
             data-testid="button-book-now-desktop"
           >
-            Book Now - ₦{companion.hourlyRate}/hr
+            {userLoading ? "Loading..." : `Book Now - ₦${companion.hourlyRate}/hr`}
           </Button>
         </div>
       </main>

@@ -1,19 +1,99 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Banknote, Heart, Star, MessageCircle, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, List } from "lucide-react";
 import { format } from "date-fns";
+import { CompanionCard } from "@/components/companion/CompanionCard";
+import { MapView } from "@/components/map/MapView";
 
 export default function ClientDashboard() {
+  const [browseViewMode, setBrowseViewMode] = useState<"list" | "map">("list");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
   const { data: bookings } = useQuery({ queryKey: ["/api/bookings/client"] });
   const { data: stats } = useQuery({ queryKey: ["/api/stats/client"] });
 
   const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];
   const completedBookings = bookings?.filter((b: any) => b.status === "completed") || [];
+
+  // Get user's geolocation for browse tab
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          // Default to Lagos, Nigeria if geolocation fails
+          setUserLocation({ lat: 6.5244, lng: 3.3792 });
+        }
+      );
+    }
+  }, []);
+
+  // Fetch companions for browse tab
+  const { data: companions, isLoading: companionsLoading } = useQuery({
+    queryKey: ["/api/companions", userLocation?.lat, userLocation?.lng],
+    queryFn: async () => {
+      if (!userLocation) return [];
+      const params = new URLSearchParams({
+        lat: userLocation.lat.toString(),
+        lng: userLocation.lng.toString(),
+      });
+      const response = await fetch(`/api/companions?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch companions");
+      return response.json();
+    },
+    enabled: !!userLocation,
+  });
+
+  // Calculate distance between two points
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Filter and sort companions by distance
+  const filteredCompanions = companions
+    ?.filter((c: any) => c.moderationStatus === "approved")
+    .filter((c: any) => {
+      if (!searchQuery) return true;
+      return (
+        c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.services?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    })
+    .map((c: any) => {
+      const distance = userLocation && c.latitude && c.longitude
+        ? calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            parseFloat(c.latitude),
+            parseFloat(c.longitude)
+          )
+        : undefined;
+      return { ...c, distance };
+    })
+    .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999));
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,8 +162,11 @@ export default function ClientDashboard() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="bookings" className="w-full">
+        <Tabs defaultValue="browse" className="w-full">
           <TabsList>
+            <TabsTrigger value="browse" data-testid="tab-browse">
+              Browse Companions
+            </TabsTrigger>
             <TabsTrigger value="bookings" data-testid="tab-bookings">
               My Bookings
             </TabsTrigger>
@@ -94,6 +177,85 @@ export default function ClientDashboard() {
               Favorites
             </TabsTrigger>
           </TabsList>
+
+          {/* Browse Companions Tab */}
+          <TabsContent value="browse" className="mt-6">
+            <Card>
+              <CardContent className="p-6">
+                {/* Search and View Toggle */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name, city, or service..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-companions"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={browseViewMode === "list" ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setBrowseViewMode("list")}
+                      data-testid="button-list-view"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={browseViewMode === "map" ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setBrowseViewMode("map")}
+                      data-testid="button-map-view"
+                    >
+                      <Map className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Companions Display */}
+                {browseViewMode === "list" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {companionsLoading ? (
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <div 
+                          key={i} 
+                          className="h-[400px] rounded-lg bg-muted animate-pulse"
+                          data-testid="skeleton-companion-card"
+                        />
+                      ))
+                    ) : filteredCompanions && filteredCompanions.length > 0 ? (
+                      filteredCompanions.map((companion: any) => (
+                        <CompanionCard
+                          key={companion.id}
+                          companion={companion}
+                          distance={companion.distance}
+                        />
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-12">
+                        <p className="text-muted-foreground text-lg" data-testid="text-no-companions">
+                          No companions found in your area
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : userLocation ? (
+                  <div className="h-[600px]" data-testid="map-container">
+                    <MapView
+                      companions={filteredCompanions || []}
+                      userLocation={userLocation}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-[600px]">
+                    <p className="text-muted-foreground">Loading map...</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="bookings" className="mt-6">
             <div className="space-y-4">

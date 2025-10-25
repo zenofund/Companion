@@ -135,14 +135,20 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date() || date > new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
-                        }
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const compareDate = new Date(date);
+                          compareDate.setHours(0, 0, 0, 0);
+                          const maxDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+                          maxDate.setHours(0, 0, 0, 0);
+                          return compareDate < today || compareDate > maxDate;
+                        }}
                         initialFocus
                       />
                     </PopoverContent>

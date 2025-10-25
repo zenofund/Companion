@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { calculateAge } from "@/lib/utils";
 
 interface CompanionCardProps {
   companion: {
@@ -12,6 +13,7 @@ interface CompanionCardProps {
     name?: string;
     avatar?: string;
     city?: string;
+    dateOfBirth?: string;
     hourlyRate?: string;
     services?: string[];
     isAvailable?: boolean;
@@ -24,7 +26,7 @@ interface CompanionCardProps {
 }
 
 export function CompanionCard({ companion, distance }: CompanionCardProps) {
-  const age = 25; // Calculate from dateOfBirth when available
+  const age = calculateAge(companion.dateOfBirth);
   const heroImage = companion.gallery?.[0] || "/placeholder-profile.jpg";
   const displayServices = companion.services?.slice(0, 3) || [];
 
@@ -92,10 +94,12 @@ export function CompanionCard({ companion, distance }: CompanionCardProps) {
               <span>{distance.toFixed(1)} km</span>
             </div>
           )}
-          <div className="flex items-center gap-1" data-testid={`text-age-${companion.id}`}>
-            <Clock className="h-4 w-4" />
-            <span>{age} yrs</span>
-          </div>
+          {age && (
+            <div className="flex items-center gap-1" data-testid={`text-age-${companion.id}`}>
+              <Clock className="h-4 w-4" />
+              <span>{age} yrs</span>
+            </div>
+          )}
         </div>
 
         {/* Service Tags */}
