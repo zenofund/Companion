@@ -28,17 +28,18 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
-      setIsConnected(true);
-      // Authenticate
-      ws.current?.send(JSON.stringify({
-        type: 'auth',
-        userId,
-      }));
+      console.log('WebSocket connected');
     };
 
     ws.current.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        
+        // Handle auth success
+        if (message.type === 'auth' && message.success) {
+          setIsConnected(true);
+        }
+        
         if (onMessage) {
           onMessage(message);
         }
@@ -58,7 +59,7 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
     ws.current.onerror = (error) => {
       console.error("WebSocket error:", error);
     };
-  }, [userId, onMessage]);
+  }, [onMessage]);
 
   const sendMessage = useCallback((bookingId: string, content: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {

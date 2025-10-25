@@ -12,7 +12,9 @@ import {
 } from "./paystack";
 import bcrypt from "bcryptjs";
 import cookie from "cookie";
+import signature from "cookie-signature";
 import { insertUserSchema, insertCompanionSchema, insertBookingSchema } from "@shared/schema";
+import { SESSION_SECRET, sessionStore } from "./index";
 
 // Session user interface
 interface SessionUser {
@@ -37,29 +39,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const clients = new Map<string, Set<WebSocket>>();
 
   wss.on('connection', (ws, req) => {
-    let userId: string | null = null;
+    let authenticatedUserId: string | null = null;
+
+    // Parse session cookie from upgrade request
+    const cookies = cookie.parse(req.headers.cookie || '');
+    const sessionCookie = cookies['connect.sid'];
+    
+    if (!sessionCookie) {
+      ws.close(4001, 'No session cookie');
+      return;
+    }
+
+    // Verify and unsign the session cookie
+    let sessionId: string | false;
+    if (sessionCookie.startsWith('s:')) {
+      // Remove 's:' prefix and unsign
+      sessionId = signature.unsign(sessionCookie.slice(2), SESSION_SECRET);
+    } else {
+      sessionId = signature.unsign(sessionCookie, SESSION_SECRET);
+    }
+
+    if (sessionId === false) {
+      ws.close(4001, 'Invalid session signature');
+      return;
+    }
+
+    // Validate session in store
+    sessionStore.get(sessionId, (err, session) => {
+      if (err || !session || !session.user) {
+        ws.close(4001, 'Invalid or expired session');
+        return;
+      }
+
+      authenticatedUserId = session.user.id;
+      
+      // Register client connection
+      if (!clients.has(authenticatedUserId)) {
+        clients.set(authenticatedUserId, new Set());
+      }
+      clients.get(authenticatedUserId)!.add(ws);
+      
+      // Send auth success
+      ws.send(JSON.stringify({ type: 'auth', success: true, userId: authenticatedUserId }));
+    });
 
     ws.on('message', async (message) => {
       try {
+        // Ensure user is authenticated
+        if (!authenticatedUserId) {
+          ws.send(JSON.stringify({ 
+            type: 'error', 
+            message: 'Not authenticated' 
+          }));
+          return;
+        }
+
         const data = JSON.parse(message.toString());
 
-        if (data.type === 'auth' && typeof data.userId === 'string') {
-          // Validate user exists
-          const user = await storage.getUser(data.userId);
-          if (!user) {
-            ws.close(4001, 'User not found');
-            return;
-          }
-
-          userId = data.userId;
-          if (!clients.has(data.userId)) {
-            clients.set(data.userId, new Set());
-          }
-          clients.get(data.userId)!.add(ws);
-          
-          // Send auth success
-          ws.send(JSON.stringify({ type: 'auth', success: true }));
-        } else if (data.type === 'message' && userId) {
+        if (data.type === 'message') {
           // Verify booking exists and user is a participant
           const booking = await storage.getBooking(data.bookingId);
           if (!booking) {
@@ -81,8 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Verify user is part of this booking
-          const isClient = booking.clientId === userId;
-          const isCompanion = companion.userId === userId;
+          const isClient = booking.clientId === authenticatedUserId;
+          const isCompanion = companion.userId === authenticatedUserId;
           
           if (!isClient && !isCompanion) {
             ws.send(JSON.stringify({ 
@@ -95,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Save message to database
           const msg = await storage.createMessage({
             bookingId: data.bookingId,
-            senderId: userId,
+            senderId: authenticatedUserId,
             content: data.content,
           });
 
@@ -126,10 +163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
-      if (userId && clients.has(userId)) {
-        clients.get(userId)!.delete(ws);
-        if (clients.get(userId)!.size === 0) {
-          clients.delete(userId);
+      if (authenticatedUserId && clients.has(authenticatedUserId)) {
+        clients.get(authenticatedUserId)!.delete(ws);
+        if (clients.get(authenticatedUserId)!.size === 0) {
+          clients.delete(authenticatedUserId);
         }
       }
     });

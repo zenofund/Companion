@@ -7,6 +7,11 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 const MemoryStore = createMemoryStore(session);
 
+export const SESSION_SECRET = process.env.SESSION_SECRET || "fliq-session-secret-change-in-production";
+export const sessionStore = new MemoryStore({
+  checkPeriod: 86400000,
+});
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
@@ -21,12 +26,10 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "fliq-session-secret-change-in-production",
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({
-      checkPeriod: 86400000,
-    }),
+    store: sessionStore,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
