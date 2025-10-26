@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { EditProfileSheet } from "@/components/companion/EditProfileSheet";
+import { RatingModal } from "@/components/booking/RatingModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -47,11 +48,21 @@ export default function CompanionDashboard() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  
   const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
   const { data: profile} = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
   const { data: pendingRequests } = useQuery<PendingBooking[]>({ queryKey: ["/api/bookings/pending"] });
   const { data: activeBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/active"] });
+  const { data: completedBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/completed"] });
   const { data: stats } = useQuery<CompanionStats>({ queryKey: ["/api/stats/companion"] });
+  
+  // Fetch rating for selected booking when modal opens
+  const { data: existingRating } = useQuery({
+    queryKey: ["/api/ratings", selectedBooking?.id],
+    enabled: !!selectedBooking && ratingModalOpen,
+  });
 
   const toggleAvailabilityMutation = useMutation({
     mutationFn: async (isAvailable: boolean) => {
@@ -417,6 +428,61 @@ export default function CompanionDashboard() {
             )}
           </div>
         </div>
+
+        {/* Completed Bookings */}
+        {completedBookings && completedBookings.length > 0 && (
+          <div className="mb-8">
+            <h2 className="font-heading text-2xl font-semibold mb-4">Booking History</h2>
+            <div className="space-y-4">
+              {completedBookings.map((booking: any) => (
+                <Card key={booking.id} className="border-muted" data-testid={`completed-booking-${booking.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-heading text-lg font-semibold">
+                            {booking.clientName}
+                          </h3>
+                          <Badge variant="secondary" className="text-xs">Completed</Badge>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
+                            <p className="text-xs">Date</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{booking.hours} hours</p>
+                            <p className="text-xs">Duration</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
+                            <p className="text-xs">Amount</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{booking.meetingLocation}</p>
+                            <p className="text-xs">Location</p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setRatingModalOpen(true);
+                        }}
+                        data-testid={`button-rate-${booking.id}`}
+                      >
+                        <Star className="h-4 w-4 mr-2" />
+                        Rate Client
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Profile Sheet */}
@@ -424,6 +490,25 @@ export default function CompanionDashboard() {
         open={isProfileModalOpen}
         onOpenChange={setIsProfileModalOpen}
       />
+
+      {/* Rating Modal */}
+      {selectedBooking && (
+        <RatingModal
+          open={ratingModalOpen}
+          onOpenChange={setRatingModalOpen}
+          bookingId={selectedBooking.id}
+          clientName={selectedBooking.clientName}
+          userRole="companion"
+          existingRating={
+            existingRating?.companionRating
+              ? {
+                  rating: existingRating.companionRating,
+                  review: existingRating.companionReview,
+                }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }

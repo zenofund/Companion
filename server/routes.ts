@@ -776,6 +776,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/bookings/companion/completed", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "companion") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const companion = await storage.getCompanionByUserId(req.session.user.id);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion profile not found" });
+      }
+
+      const bookings = await storage.getCompletedBookings(companion.id);
+      return res.json(bookings);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   // Submit or update rating for a booking
   app.post("/api/bookings/:id/rate", async (req, res) => {
     if (!req.session.user) {
