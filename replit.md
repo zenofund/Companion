@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 26, 2025 - Payment Redirect & Companion Booking Management**
+- Fixed Paystack payment callback URL to use proper https protocol with REPLIT_DEV_DOMAIN
+- Added comprehensive logging throughout payment flow for easier debugging
+- Created `/api/bookings/companion/active` endpoint to fetch accepted/active bookings for companions
+- Added `getActiveBookings` method to storage layer with client information joins
+- Implemented Active Bookings section in Companion Dashboard showing all accepted/in-progress bookings
+- Added Chat button to open booking chat and Complete button to mark bookings as finished
+- Created `/api/bookings/:id/complete` route for companions to complete bookings
+- Payment redirect now works correctly: Paystack → callback route → dashboard with success toast
+
 **October 25, 2025 - Logo Mobile Fix**
 - Fixed logo in header to resize proportionately on mobile devices
 - Logo now uses responsive height (smaller on mobile, larger on desktop)
