@@ -36,22 +36,18 @@ export async function initializePayment(
   email: string,
   amount: number,
   metadata: any,
+  callbackBaseUrl: string,
   subaccountCode?: string,
   transactionCharge?: number
 ): Promise<{ authorization_url: string; reference: string }> {
   const reference = `fliq_${randomUUID()}`;
-
-  // Construct proper callback URL with https protocol
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : "http://localhost:5000";
   
   const payload: any = {
     email,
     amount: Math.round(amount * 100), // Convert to kobo/cents
     reference,
     metadata,
-    callback_url: `${baseUrl}/payment/callback`,
+    callback_url: `${callbackBaseUrl}/payment/callback`,
   };
   
   console.log("[Paystack] Initializing payment with callback URL:", payload.callback_url);

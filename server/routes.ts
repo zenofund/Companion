@@ -607,6 +607,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestExpiresAt,
       });
 
+      // Construct callback base URL that works in both dev and production
+      const protocol = req.protocol; // 'https' in production, 'http' in dev (trust proxy enabled)
+      const host = req.get('host');
+      const callbackBaseUrl = `${protocol}://${host}`;
+
       // Initialize Paystack payment with split payment
       const payment = await initializePayment(
         req.session.user.email,
@@ -616,6 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.session.user.id,
           companionId: data.companionId,
         },
+        callbackBaseUrl,
         companion.paystackSubaccountCode || undefined,
         splitAmounts.platformFee
       );
