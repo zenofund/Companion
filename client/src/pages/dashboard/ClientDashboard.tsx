@@ -320,7 +320,12 @@ export default function ClientDashboard() {
                           <Badge variant="default">
                             {booking.status}
                           </Badge>
-                          <Button size="sm" variant="outline" data-testid={`button-chat-${booking.id}`}>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => setLocation(`/booking/${booking.id}/chat`)}
+                            data-testid={`button-chat-${booking.id}`}
+                          >
                             <MessageCircle className="h-4 w-4 mr-2" />
                             Chat
                           </Button>

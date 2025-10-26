@@ -384,7 +384,7 @@ export default function CompanionDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setLocation(`/chat/${booking.id}`)}
+                          onClick={() => setLocation(`/booking/${booking.id}/chat`)}
                           data-testid={`button-chat-${booking.id}`}
                         >
                           <MessageCircle className="h-4 w-4 mr-2" />
