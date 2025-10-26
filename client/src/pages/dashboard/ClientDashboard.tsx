@@ -12,17 +12,26 @@ import { format } from "date-fns";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { MapView } from "@/components/map/MapView";
 import { useToast } from "@/hooks/use-toast";
+import { RatingModal } from "@/components/booking/RatingModal";
 
 export default function ClientDashboard() {
   const [browseViewMode, setBrowseViewMode] = useState<"list" | "map">("list");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
   const { data: bookings } = useQuery({ queryKey: ["/api/bookings/client"] });
   const { data: stats } = useQuery({ queryKey: ["/api/stats/client"] });
+  
+  // Fetch rating for selected booking when modal opens
+  const { data: existingRating } = useQuery({
+    queryKey: ["/api/ratings", selectedBooking?.id],
+    enabled: !!selectedBooking && ratingModalOpen,
+  });
 
   const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];
   const completedBookings = bookings?.filter((b: any) => b.status === "completed") || [];
@@ -347,6 +356,57 @@ export default function ClientDashboard() {
                 </Card>
               )}
             </div>
+
+            {/* Completed Bookings */}
+            {completedBookings.length > 0 && (
+              <div className="mt-8">
+                <h3 className="font-heading text-xl font-semibold mb-4">Booking History</h3>
+                <div className="space-y-4">
+                  {completedBookings.map((booking: any) => (
+                    <Card key={booking.id} data-testid={`completed-booking-${booking.id}`}>
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <h3 className="font-heading text-lg font-semibold">
+                              {booking.companionName}
+                            </h3>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                {format(new Date(booking.bookingDate), "PPP")}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {booking.hours} hours
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Banknote className="h-4 w-4" />
+                                ₦{booking.totalAmount}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">Completed</Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setRatingModalOpen(true);
+                              }}
+                              data-testid={`button-rate-${booking.id}`}
+                            >
+                              <Star className="h-4 w-4 mr-2" />
+                              Rate
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="messages" className="mt-6">
@@ -372,6 +432,25 @@ export default function ClientDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Rating Modal */}
+      {selectedBooking && (
+        <RatingModal
+          open={ratingModalOpen}
+          onOpenChange={setRatingModalOpen}
+          bookingId={selectedBooking.id}
+          companionName={selectedBooking.companionName}
+          userRole="client"
+          existingRating={
+            existingRating?.clientRating
+              ? {
+                  rating: existingRating.clientRating,
+                  review: existingRating.clientReview,
+                }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }
