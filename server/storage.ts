@@ -384,6 +384,13 @@ export class DatabaseStorage implements IStorage {
     return rating;
   }
 
+  async getCompanionRatings(companionId: string): Promise<Rating[]> {
+    return await db
+      .select()
+      .from(ratings)
+      .where(eq(ratings.companionId, companionId));
+  }
+
   // Admin
   async getAdminSetting(key: string): Promise<string | undefined> {
     const [setting] = await db.select().from(adminSettings).where(eq(adminSettings.key, key));

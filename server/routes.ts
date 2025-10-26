@@ -32,6 +32,26 @@ declare module "express-session" {
   }
 }
 
+// Helper function to recalculate companion's average rating
+async function recalculateCompanionRating(companionId: string): Promise<void> {
+  try {
+    // Get all ratings for this companion where clients have rated
+    const allRatings = await storage.getCompanionRatings(companionId);
+    const clientRatings = allRatings
+      .filter((r: any) => r.clientRating !== null)
+      .map((r: any) => r.clientRating);
+
+    if (clientRatings.length > 0) {
+      const averageRating = clientRatings.reduce((sum: number, rating: number) => sum + rating, 0) / clientRatings.length;
+      await storage.updateCompanion(companionId, {
+        averageRating: averageRating.toFixed(2),
+      });
+    }
+  } catch (error) {
+    console.error("[Rating] Error recalculating companion rating:", error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
@@ -751,6 +771,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const bookings = await storage.getActiveBookings(companion.id);
       return res.json(bookings);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Submit or update rating for a booking
+  app.post("/api/bookings/:id/rate", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const bookingId = req.params.id;
+      const booking = await storage.getBooking(bookingId);
+      
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Only completed bookings can be rated
+      if (booking.status !== "completed") {
+        return res.status(400).json({ message: "Can only rate completed bookings" });
+      }
+
+      // Verify user is part of this booking
+      const companion = await storage.getCompanion(booking.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      const isClient = req.session.user.id === booking.clientId;
+      const isCompanion = req.session.user.id === companion.userId;
+
+      if (!isClient && !isCompanion) {
+        return res.status(403).json({ message: "Not authorized to rate this booking" });
+      }
+
+      // Validate rating data
+      const ratingSchema = z.object({
+        rating: z.number().min(1).max(5),
+        review: z.string().optional(),
+      });
+
+      const data = ratingSchema.parse(req.body);
+
+      // Check if rating already exists
+      let existingRating = await storage.getRatingByBooking(bookingId);
+
+      if (existingRating) {
+        // Update existing rating with the user's rating
+        const updates: any = {};
+        if (isClient) {
+          if (existingRating.clientRating) {
+            return res.status(400).json({ message: "You have already rated this booking" });
+          }
+          updates.clientRating = data.rating;
+          updates.clientReview = data.review || null;
+        } else {
+          if (existingRating.companionRating) {
+            return res.status(400).json({ message: "You have already rated this booking" });
+          }
+          updates.companionRating = data.rating;
+          updates.companionReview = data.review || null;
+        }
+
+        const updatedRating = await storage.updateRating(existingRating.id, updates);
+        
+        // Recalculate companion's average rating if client rated
+        if (isClient) {
+          await recalculateCompanionRating(booking.companionId);
+        }
+        
+        return res.json(updatedRating);
+      } else {
+        // Create new rating
+        const newRating = await storage.createRating({
+          bookingId,
+          clientId: booking.clientId,
+          companionId: booking.companionId,
+          clientRating: isClient ? data.rating : null,
+          clientReview: isClient ? (data.review || null) : null,
+          companionRating: isCompanion ? data.rating : null,
+          companionReview: isCompanion ? (data.review || null) : null,
+        });
+
+        // Recalculate companion's average rating if client rated
+        if (isClient) {
+          await recalculateCompanionRating(booking.companionId);
+        }
+
+        return res.json(newRating);
+      }
+    } catch (error: any) {
+      console.error("[Rating] Error submitting rating:", error);
+      return res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Get rating for a booking
+  app.get("/api/ratings/:bookingId", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const rating = await storage.getRatingByBooking(req.params.bookingId);
+      return res.json(rating || null);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
