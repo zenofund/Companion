@@ -620,6 +620,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         splitAmounts.platformFee
       );
 
+      console.log("[Booking] Payment initialized:", {
+        bookingId: booking.id,
+        reference: payment.reference,
+        authUrl: payment.authorization_url
+      });
+
       // Create payment record with split amounts
       await storage.createPayment({
         bookingId: booking.id,
@@ -712,14 +718,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Paystack callback - redirects user back to app after payment
   app.get("/payment/callback", async (req, res) => {
+    console.log("[Payment Callback] Received callback from Paystack", {
+      reference: req.query.reference,
+      allParams: req.query
+    });
+
     const reference = req.query.reference as string;
 
     if (!reference) {
+      console.error("[Payment Callback] No reference provided");
       return res.redirect("/?payment=error");
     }
 
     try {
+      console.log("[Payment Callback] Verifying payment:", reference);
       const verification = await verifyPayment(reference);
+      console.log("[Payment Callback] Verification result:", verification);
 
       if (verification.status === "success") {
         const payment = await storage.getPaymentByBooking(verification.metadata.bookingId);
@@ -734,15 +748,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "accepted",
             });
           }
+          console.log("[Payment Callback] Payment processed successfully, redirecting to dashboard");
         }
 
         // Redirect to client dashboard with success message
         return res.redirect("/client-dashboard?payment=success");
       } else {
+        console.error("[Payment Callback] Payment verification failed:", verification.status);
         return res.redirect("/client-dashboard?payment=failed");
       }
     } catch (error: any) {
-      console.error("Payment callback error:", error);
+      console.error("[Payment Callback] Error processing callback:", error);
       return res.redirect("/client-dashboard?payment=error");
     }
   });
