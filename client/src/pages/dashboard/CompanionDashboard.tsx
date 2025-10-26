@@ -48,8 +48,9 @@ export default function CompanionDashboard() {
   const [, setLocation] = useLocation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
-  const { data: profile } = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
+  const { data: profile} = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
   const { data: pendingRequests } = useQuery<PendingBooking[]>({ queryKey: ["/api/bookings/pending"] });
+  const { data: activeBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/active"] });
   const { data: stats } = useQuery<CompanionStats>({ queryKey: ["/api/stats/companion"] });
 
   const toggleAvailabilityMutation = useMutation({
@@ -72,12 +73,27 @@ export default function CompanionDashboard() {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/companion/active"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/companion"] });
       toast({
         title: "Booking updated",
         description: variables.action === "accept" 
           ? "Booking accepted successfully" 
           : "Booking declined",
+      });
+    },
+  });
+
+  const completeBookingMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      return await apiRequest("POST", `/api/bookings/${bookingId}/complete`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/companion/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/companion"] });
+      toast({
+        title: "Booking completed",
+        description: "The booking has been marked as completed",
       });
     },
   });
@@ -315,6 +331,86 @@ export default function CompanionDashboard() {
                   <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground" data-testid="text-no-requests">
                     No pending requests
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Active Bookings */}
+        <div className="mb-8">
+          <h2 className="font-heading text-2xl font-semibold mb-4">Active Bookings</h2>
+          <div className="space-y-4">
+            {activeBookings && activeBookings.length > 0 ? (
+              activeBookings.map((booking: any) => (
+                <Card key={booking.id} className="border-primary/20" data-testid={`active-booking-${booking.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-heading text-lg font-semibold">
+                            {booking.clientName}
+                          </h3>
+                          <Badge variant="default" className="text-xs">
+                            {booking.status === "accepted" ? "Upcoming" : "In Progress"}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
+                            <p className="text-xs">Date</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{booking.hours} hours</p>
+                            <p className="text-xs">Duration</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
+                            <p className="text-xs">Amount</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{booking.meetingLocation}</p>
+                            <p className="text-xs">Location</p>
+                          </div>
+                        </div>
+                        {booking.specialRequests && (
+                          <p className="mt-3 text-sm text-muted-foreground">
+                            <span className="font-medium">Note:</span> {booking.specialRequests}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLocation(`/chat/${booking.id}`)}
+                          data-testid={`button-chat-${booking.id}`}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Chat
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => completeBookingMutation.mutate(booking.id)}
+                          disabled={completeBookingMutation.isPending}
+                          data-testid={`button-complete-${booking.id}`}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {completeBookingMutation.isPending ? "Completing..." : "Complete"}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground" data-testid="text-no-active-bookings">
+                    No active bookings
                   </p>
                 </CardContent>
               </Card>

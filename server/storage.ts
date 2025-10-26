@@ -45,6 +45,7 @@ export interface IStorage {
   getClientBookings(clientId: string): Promise<Booking[]>;
   getCompanionBookings(companionId: string): Promise<Booking[]>;
   getPendingBookings(companionId: string): Promise<Booking[]>;
+  getActiveBookings(companionId: string): Promise<any[]>;
   getCompanionStats(companionId: string): Promise<{
     activeBookings: number;
     todayEarnings: string;
@@ -214,6 +215,29 @@ export class DatabaseStorage implements IStorage {
     return results.map(r => ({
       ...r.booking,
       clientName: r.client?.name || "Unknown",
+    }));
+  }
+
+  async getActiveBookings(companionId: string): Promise<any[]> {
+    const results = await db
+      .select({
+        booking: bookings,
+        client: users,
+      })
+      .from(bookings)
+      .leftJoin(users, eq(bookings.clientId, users.id))
+      .where(
+        and(
+          eq(bookings.companionId, companionId),
+          sql`${bookings.status} IN ('accepted', 'active')`
+        )
+      )
+      .orderBy(desc(bookings.bookingDate));
+    
+    return results.map(r => ({
+      ...r.booking,
+      clientName: r.client?.name || "Unknown",
+      clientAvatar: r.client?.avatar || null,
     }));
   }
 
