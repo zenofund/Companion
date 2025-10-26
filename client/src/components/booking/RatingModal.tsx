@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,10 +29,33 @@ export function RatingModal({
   existingRating,
   userRole,
 }: RatingModalProps) {
-  const [rating, setRating] = useState(existingRating?.rating || 0);
+  const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [review, setReview] = useState(existingRating?.review || "");
+  const [review, setReview] = useState("");
   const { toast } = useToast();
+
+  // Sync state when existingRating or bookingId changes
+  useEffect(() => {
+    if (existingRating) {
+      setRating(existingRating.rating);
+      setReview(existingRating.review || "");
+    } else {
+      setRating(0);
+      setReview("");
+    }
+  }, [existingRating, bookingId]);
+
+  // Reset state when modal closes (clear stale input for unrated bookings)
+  useEffect(() => {
+    if (!open) {
+      setHoveredRating(0);
+      // Clear rating/review if no existing rating to prevent stale data
+      if (!existingRating) {
+        setRating(0);
+        setReview("");
+      }
+    }
+  }, [open, existingRating]);
 
   const submitRatingMutation = useMutation({
     mutationFn: async () => {
