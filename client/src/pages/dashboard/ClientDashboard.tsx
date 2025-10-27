@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, List } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, List, CheckCircle, AlertCircle } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { MapView } from "@/components/map/MapView";
 import { useToast } from "@/hooks/use-toast";
 import { RatingModal } from "@/components/booking/RatingModal";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function ClientDashboard() {
   const [browseViewMode, setBrowseViewMode] = useState<"list" | "map">("list");
@@ -25,6 +26,7 @@ export default function ClientDashboard() {
 
   const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
   const { data: bookings } = useQuery({ queryKey: ["/api/bookings/client"] });
+  const { data: pendingCompletionBookings } = useQuery({ queryKey: ["/api/bookings/client/pending-completion"] });
   const { data: stats } = useQuery({ queryKey: ["/api/stats/client"] });
   
   // Fetch rating for selected booking when modal opens
@@ -136,6 +138,29 @@ export default function ClientDashboard() {
       return { ...c, distance };
     })
     .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999));
+
+  // Confirm completion mutation
+  const confirmCompletionMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      return await apiRequest("POST", `/api/bookings/${bookingId}/confirm-completion`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/client"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/client/pending-completion"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/client"] });
+      toast({
+        title: "Booking confirmed",
+        description: "The booking has been marked as completed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to confirm completion",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -356,6 +381,78 @@ export default function ClientDashboard() {
                 </Card>
               )}
             </div>
+
+            {/* Pending Completion Bookings */}
+            {pendingCompletionBookings && pendingCompletionBookings.length > 0 && (
+              <div className="mt-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                  <h3 className="font-heading text-xl font-semibold">Awaiting Your Confirmation</h3>
+                </div>
+                <div className="space-y-4">
+                  {pendingCompletionBookings.map((booking: any) => {
+                    const completionRequestedAt = booking.completionRequestedAt ? new Date(booking.completionRequestedAt) : null;
+                    const hoursRemaining = completionRequestedAt 
+                      ? Math.max(0, 48 - Math.floor((Date.now() - completionRequestedAt.getTime()) / (1000 * 60 * 60)))
+                      : 0;
+                    
+                    return (
+                      <Card key={booking.id} className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30" data-testid={`pending-completion-${booking.id}`}>
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-heading text-lg font-semibold">
+                                  {booking.companionName}
+                                </h3>
+                                <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                  Pending Confirmation
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
+                                <div>
+                                  <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
+                                  <p className="text-xs">Date</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground">{booking.hours} hours</p>
+                                  <p className="text-xs">Duration</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
+                                  <p className="text-xs">Amount</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground">{booking.meetingLocation}</p>
+                                  <p className="text-xs">Location</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
+                                <Clock className="h-4 w-4" />
+                                <span>
+                                  {hoursRemaining > 0 
+                                    ? `Auto-completes in ${hoursRemaining} hours if not confirmed`
+                                    : "Will auto-complete soon"}
+                                </span>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => confirmCompletionMutation.mutate(booking.id)}
+                              disabled={confirmCompletionMutation.isPending}
+                              data-testid={`button-confirm-${booking.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {confirmCompletionMutation.isPending ? "Confirming..." : "Confirm Completion"}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Completed Bookings */}
             {completedBookings.length > 0 && (
