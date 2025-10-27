@@ -10,13 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 27, 2025 - Fixed Booking Dashboard Display Bug**
-- Fixed critical Express route ordering bug preventing bookings from appearing on dashboards
-- Moved GET /api/bookings/:id route to come AFTER all specific routes (/client, /pending, etc.)
-- Previous issue: parameterized :id route was matching "/client" and treating it as a booking ID
-- Bookings now properly display on both client and companion dashboards
-- Also fixed TypeScript errors: removed invalid `status` field and changed `getUserById()` to `getUser()`
-- Updated insertBookingSchema to allow `requestExpiresAt` field for 24-hour expiry tracking
+**October 27, 2025 - Fixed Client Payment Workflow & Pending Payment Display**
+- Identified and fixed critical bug: clients couldn't see bookings awaiting payment after companion acceptance
+- Root cause: bookings with "accepted" status weren't displayed on client dashboard (only "active" shown)
+- Added "Pending Payment" section to Client Dashboard showing bookings awaiting payment
+- Created GET /api/bookings/:id/payment-url endpoint to retrieve payment URL for accepted bookings
+- Payment URL now stored in payment metadata during companion acceptance for later retrieval
+- Added "Pay Now" button that fetches payment URL and redirects client to Paystack
+- Complete workflow now works: companion accepts → client sees pending payment → client pays → booking active
+- Also fixed Express route ordering bug and TypeScript errors from previous session
 
 **October 27, 2025 - Restored Booking Workflow & Added Dispute System**
 - Restructured booking flow to match correct workflow: request → companion accepts → payment → chat → complete → confirm/dispute
