@@ -225,7 +225,6 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   createdAt: true,
   updatedAt: true,
   status: true,
-  requestExpiresAt: true,
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).omit({

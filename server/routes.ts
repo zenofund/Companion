@@ -620,7 +620,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalAmount: data.totalAmount,
         specialRequests: data.specialRequests,
         requestExpiresAt,
-        status: "pending",
       });
 
       console.log("[Booking] Request created (pending companion acceptance):", {
@@ -655,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get client and companion details for payment
-      const client = await storage.getUserById(booking.clientId);
+      const client = await storage.getUser(booking.clientId);
       const companion = await storage.getCompanion(booking.companionId);
       
       if (!client || !companion) {
