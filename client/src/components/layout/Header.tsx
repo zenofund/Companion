@@ -1,5 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { MapPin, List, Bell, Menu, User, LogOut, UserCircle, Sun, Moon } from "lucide-react";
+import {
+  MapPin,
+  List,
+  Bell,
+  Menu,
+  User,
+  LogOut,
+  UserCircle,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +39,13 @@ interface HeaderProps {
   onProfileClick?: () => void;
 }
 
-export function Header({ user, viewMode, onViewModeChange, notificationCount = 0, onProfileClick }: HeaderProps) {
+export function Header({
+  user,
+  viewMode,
+  onViewModeChange,
+  notificationCount = 0,
+  onProfileClick,
+}: HeaderProps) {
   const [location, setLocation] = useLocation();
   const isHomePage = location === "/";
   const { toast } = useToast();
@@ -61,17 +77,21 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
   };
 
   return (
-    <header 
+    <header
       className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-md"
       data-testid="header-navigation"
     >
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2" data-testid="link-home">
-            <img 
-              src="/logo.png" 
-              alt="fliQ" 
+          <Link
+            href="/"
+            className="flex items-center gap-2"
+            data-testid="link-home"
+          >
+            <img
+              src="/logo.png"
+              alt="fliQ"
               className="h-8 sm:h-10 w-auto object-contain"
             />
           </Link>
@@ -122,16 +142,16 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
             {user ? (
               <>
                 {/* Notifications */}
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   className="relative"
                   data-testid="button-notifications"
                 >
                   <Bell className="h-5 w-5" />
                   {notificationCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
+                    <Badge
+                      variant="destructive"
                       className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
                     >
                       {notificationCount > 9 ? "9+" : notificationCount}
@@ -142,26 +162,35 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
                 {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Avatar 
+                    <Avatar
                       className="h-9 w-9 hover-elevate cursor-pointer border-2 border-primary/20"
                       data-testid="button-user-menu"
                     >
-                      <AvatarImage src={user.avatar} alt={user.name || "User"} />
+                      <AvatarImage
+                        src={user.avatar}
+                        alt={user.name || "User"}
+                      />
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
+                        {user.name?.charAt(0).toUpperCase() || (
+                          <User className="h-4 w-4" />
+                        )}
                       </AvatarFallback>
                     </Avatar>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.name || "User"}</p>
-                        <p className="text-xs leading-none text-muted-foreground capitalize">{user.role}</p>
+                        <p className="text-sm font-medium leading-none">
+                          {user.name || "User"}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground capitalize">
+                          {user.role}
+                        </p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link 
+                      <Link
                         href={`/dashboard/${user.role}`}
                         className="cursor-pointer"
                         data-testid="link-dashboard"
@@ -171,7 +200,7 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
                       </Link>
                     </DropdownMenuItem>
                     {onProfileClick && (
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={onProfileClick}
                         data-testid="button-profile"
                       >
@@ -180,7 +209,7 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleLogout}
                       disabled={logoutMutation.isPending}
                       data-testid="button-logout"
@@ -208,9 +237,9 @@ export function Header({ user, viewMode, onViewModeChange, notificationCount = 0
             )}
 
             {/* Mobile Menu */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="md:hidden"
               data-testid="button-menu"
             >

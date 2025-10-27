@@ -26,7 +26,10 @@ interface Companion {
 
 export default function Landing() {
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get user's geolocation
@@ -42,8 +45,8 @@ export default function Landing() {
         (error) => {
           console.error("Error getting location:", error);
           // Default to a city center if geolocation fails
-          setUserLocation({ lat: 40.7128, lng: -74.0060 }); // New York
-        }
+          setUserLocation({ lat: 40.7128, lng: -74.006 }); // New York
+        },
       );
     }
   }, []);
@@ -65,14 +68,21 @@ export default function Landing() {
   });
 
   // Calculate distance between two points
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ) => {
     const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -85,48 +95,55 @@ export default function Landing() {
       return (
         c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.services?.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+        c.services?.some((s) =>
+          s.toLowerCase().includes(searchQuery.toLowerCase()),
+        )
       );
     })
     .map((c) => {
-      const distance = userLocation && c.latitude && c.longitude
-        ? calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            parseFloat(c.latitude),
-            parseFloat(c.longitude)
-          )
-        : undefined;
+      const distance =
+        userLocation && c.latitude && c.longitude
+          ? calculateDistance(
+              userLocation.lat,
+              userLocation.lng,
+              parseFloat(c.latitude),
+              parseFloat(c.longitude),
+            )
+          : undefined;
       return { ...c, distance };
     })
     .sort((a, b) => (a.distance || 999) - (b.distance || 999));
 
   return (
     <div className="min-h-screen bg-background">
-      <Header viewMode={viewMode} onViewModeChange={setViewMode} />
-      
+      {/* Set a higher z-index on the header */}
+      <div className="relative z-50">
+        <Header viewMode={viewMode} onViewModeChange={setViewMode} />
+      </div>
+
       <main className="pt-16">
         {/* Hero Section */}
         <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
           {/* Background Image with Dark Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-background z-0" />
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600')] bg-cover bg-center opacity-20 z-0" />
-          
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600' )] bg-cover bg-center opacity-20 z-0" />
+
           {/* Hero Content */}
           <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
-            <h1 
+            <h1
               className="font-heading text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-foreground leading-tight"
               data-testid="text-hero-title"
             >
               Find Your Perfect Companion
             </h1>
-            <p 
+            <p
               className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 leading-relaxed"
               data-testid="text-hero-subtitle"
             >
-              Discover and book professional companions near you with real-time availability
+              Discover and book professional companions near you with real-time
+              availability
             </p>
-            
+
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto mb-6">
               <div className="relative flex-1">
@@ -139,8 +156,8 @@ export default function Landing() {
                   data-testid="input-search"
                 />
               </div>
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="gap-2 h-12"
                 data-testid="button-filters"
               >
@@ -164,8 +181,8 @@ export default function Landing() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className="h-[400px] rounded-lg bg-muted animate-pulse"
                     data-testid="skeleton-companion-card"
                   />
@@ -180,21 +197,25 @@ export default function Landing() {
                 ))
               ) : (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-muted-foreground text-lg" data-testid="text-no-companions">
+                  <p
+                    className="text-muted-foreground text-lg"
+                    data-testid="text-no-companions"
+                  >
                     No companions found in your area
                   </p>
                 </div>
               )}
             </div>
           ) : userLocation ? (
-            <div className="h-[600px]" data-testid="map-container">
+            // Set a lower z-index on the map container
+            <div className="relative h-[600px] z-0" data-testid="map-container">
               <MapView
                 companions={filteredCompanions || []}
                 userLocation={userLocation}
               />
             </div>
           ) : (
-            <div 
+            <div
               className="h-[600px] rounded-lg bg-muted flex items-center justify-center"
               data-testid="map-loading"
             >
