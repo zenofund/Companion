@@ -10,6 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 27, 2025 - Client Confirmation System with 48-Hour Auto-Completion**
+- Implemented fraud prevention system requiring client confirmation before booking completion
+- Added `pending_completion` status to bookings enum and `completionRequestedAt` timestamp field
+- Modified companion "Complete" button to "Request Completion" - sets booking to pending_completion
+- Created `/api/bookings/:id/confirm-completion` endpoint for clients to confirm service completion
+- Added `/api/bookings/client/pending-completion` endpoint with automatic expiry processing
+- Implemented `autoCompleteExpiredRequests()` helper that auto-completes bookings after 48 hours
+- Added "Awaiting Your Confirmation" section to Client Dashboard with countdown timer
+- Added "Awaiting Client Confirmation" section to Companion Dashboard showing pending requests
+- Yellow-highlighted cards show hours remaining until auto-completion
+- Auto-completion runs whenever client checks their pending completion bookings
+- Protects clients from unscrupulous companions while not indefinitely holding companion payments
+
 **October 26, 2025 - Payment Redirect & Companion Booking Management**
 - Fixed Paystack payment callback URL to use proper https protocol with REPLIT_DEV_DOMAIN
 - Added comprehensive logging throughout payment flow for easier debugging

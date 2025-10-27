@@ -58,6 +58,10 @@ export default function CompanionDashboard() {
   const { data: completedBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/completed"] });
   const { data: stats } = useQuery<CompanionStats>({ queryKey: ["/api/stats/companion"] });
   
+  // Separate active bookings into truly active and pending completion
+  const reallyActiveBookings = activeBookings?.filter((b: any) => b.status === "accepted" || b.status === "active") || [];
+  const pendingCompletionBookings = activeBookings?.filter((b: any) => b.status === "pending_completion") || [];
+  
   // Fetch rating for selected booking when modal opens
   const { data: existingRating } = useQuery({
     queryKey: ["/api/ratings", selectedBooking?.id],
@@ -353,8 +357,8 @@ export default function CompanionDashboard() {
         <div className="mb-8">
           <h2 className="font-heading text-2xl font-semibold mb-4">Active Bookings</h2>
           <div className="space-y-4">
-            {activeBookings && activeBookings.length > 0 ? (
-              activeBookings.map((booking: any) => (
+            {reallyActiveBookings && reallyActiveBookings.length > 0 ? (
+              reallyActiveBookings.map((booking: any) => (
                 <Card key={booking.id} className="border-primary/20" data-testid={`active-booking-${booking.id}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
@@ -428,6 +432,78 @@ export default function CompanionDashboard() {
             )}
           </div>
         </div>
+
+        {/* Pending Completion Bookings */}
+        {pendingCompletionBookings && pendingCompletionBookings.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+              <h2 className="font-heading text-2xl font-semibold">Awaiting Client Confirmation</h2>
+            </div>
+            <div className="space-y-4">
+              {pendingCompletionBookings.map((booking: any) => {
+                const completionRequestedAt = booking.completionRequestedAt ? new Date(booking.completionRequestedAt) : null;
+                const hoursRemaining = completionRequestedAt 
+                  ? Math.max(0, 48 - Math.floor((Date.now() - completionRequestedAt.getTime()) / (1000 * 60 * 60)))
+                  : 0;
+                
+                return (
+                  <Card key={booking.id} className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30" data-testid={`pending-completion-${booking.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-heading text-lg font-semibold">
+                              {booking.clientName}
+                            </h3>
+                            <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                              Pending Client Confirmation
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
+                            <div>
+                              <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
+                              <p className="text-xs">Date</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{booking.hours} hours</p>
+                              <p className="text-xs">Duration</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
+                              <p className="text-xs">Amount</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{booking.meetingLocation}</p>
+                              <p className="text-xs">Location</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
+                            <Clock className="h-4 w-4" />
+                            <span>
+                              {hoursRemaining > 0 
+                                ? `Will auto-complete in ${hoursRemaining} hours if client doesn't respond`
+                                : "Will auto-complete soon"}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setLocation(`/booking/${booking.id}/chat`)}
+                          data-testid={`button-chat-pending-${booking.id}`}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Chat
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Completed Bookings */}
         {completedBookings && completedBookings.length > 0 && (
