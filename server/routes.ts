@@ -608,13 +608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Companion not found" });
       }
 
-      // Calculate split amounts
-      const platformFee = parseFloat(await storage.getAdminSetting("platform_fee") || "20");
-      const { calculateSplitAmounts } = await import("./paystack");
-      const splitAmounts = calculateSplitAmounts(parseFloat(data.totalAmount), platformFee);
-
-      // Create booking with 15-minute expiry
-      const requestExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      // Create booking request (pending companion acceptance) with 24-hour expiry
+      const requestExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const booking = await storage.createBooking({
         clientId: req.session.user.id,
@@ -625,46 +620,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalAmount: data.totalAmount,
         specialRequests: data.specialRequests,
         requestExpiresAt,
+        status: "pending",
       });
 
-      // Construct callback base URL that works in both dev and production
-      const protocol = req.protocol; // 'https' in production, 'http' in dev (trust proxy enabled)
-      const host = req.get('host');
-      const callbackBaseUrl = `${protocol}://${host}`;
-
-      // Initialize Paystack payment with split payment
-      const payment = await initializePayment(
-        req.session.user.email,
-        parseFloat(data.totalAmount),
-        {
-          bookingId: booking.id,
-          userId: req.session.user.id,
-          companionId: data.companionId,
-        },
-        callbackBaseUrl,
-        companion.paystackSubaccountCode || undefined,
-        splitAmounts.platformFee
-      );
-
-      console.log("[Booking] Payment initialized:", {
+      console.log("[Booking] Request created (pending companion acceptance):", {
         bookingId: booking.id,
-        reference: payment.reference,
-        authUrl: payment.authorization_url
-      });
-
-      // Create payment record with split amounts
-      await storage.createPayment({
-        bookingId: booking.id,
-        amount: data.totalAmount,
-        paystackReference: payment.reference,
-        platformFee: splitAmounts.platformFee.toString(),
-        companionEarning: splitAmounts.companionEarning.toString(),
+        companionId: data.companionId,
       });
 
       return res.json({
         bookingId: booking.id,
-        paymentUrl: payment.authorization_url,
-        reference: payment.reference,
+        message: "Booking request sent to companion. Payment will be processed after companion accepts.",
       });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
@@ -688,9 +654,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Booking request has expired" });
       }
 
+      // Get client and companion details for payment
+      const client = await storage.getUserById(booking.clientId);
+      const companion = await storage.getCompanion(booking.companionId);
+      
+      if (!client || !companion) {
+        return res.status(404).json({ message: "Client or companion not found" });
+      }
+
+      // Calculate split amounts
+      const platformFee = parseFloat(await storage.getAdminSetting("platform_fee") || "20");
+      const { calculateSplitAmounts } = await import("./paystack");
+      const splitAmounts = calculateSplitAmounts(parseFloat(booking.totalAmount), platformFee);
+
+      // Construct callback base URL
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const callbackBaseUrl = `${protocol}://${host}`;
+
+      // Initialize Paystack payment with split payment
+      const payment = await initializePayment(
+        client.email,
+        parseFloat(booking.totalAmount),
+        {
+          bookingId: booking.id,
+          userId: client.id,
+          companionId: companion.id,
+        },
+        callbackBaseUrl,
+        companion.paystackSubaccountCode || undefined,
+        splitAmounts.platformFee
+      );
+
+      console.log("[Booking] Companion accepted - Payment initialized:", {
+        bookingId: booking.id,
+        reference: payment.reference,
+      });
+
+      // Create payment record with split amounts
+      await storage.createPayment({
+        bookingId: booking.id,
+        amount: booking.totalAmount,
+        paystackReference: payment.reference,
+        platformFee: splitAmounts.platformFee.toString(),
+        companionEarning: splitAmounts.companionEarning.toString(),
+      });
+
+      // Update booking to accepted status
       const updated = await storage.updateBooking(booking.id, { status: "accepted" });
 
-      return res.json(updated);
+      return res.json({
+        booking: updated,
+        paymentUrl: payment.authorization_url,
+        reference: payment.reference,
+      });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -754,6 +771,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updated = await storage.updateBooking(booking.id, { status: "completed" });
       return res.json(updated);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Client disputes booking completion
+  app.post("/api/bookings/:id/dispute", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Verify client owns this booking
+      if (booking.clientId !== req.session.user.id) {
+        return res.status(403).json({ message: "Not your booking" });
+      }
+
+      if (booking.status !== "pending_completion") {
+        return res.status(400).json({ message: "Booking is not pending completion" });
+      }
+
+      const updated = await storage.updateBooking(booking.id, { status: "disputed" });
+      
+      console.log("[Booking] Dispute opened:", {
+        bookingId: booking.id,
+        clientId: booking.clientId,
+        companionId: booking.companionId,
+      });
+
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/bookings/:id", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Verify user is part of this booking
+      const companion = await storage.getCompanion(booking.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      if (booking.clientId !== req.session.user.id && companion.userId !== req.session.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      return res.json(booking);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

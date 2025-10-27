@@ -14,7 +14,8 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "pending_completion",
   "completed",
   "cancelled",
-  "expired"
+  "expired",
+  "disputed"
 ]);
 export const moderationStatusEnum = pgEnum("moderation_status", ["pending", "approved", "rejected"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "refunded", "failed"]);
