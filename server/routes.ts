@@ -690,13 +690,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reference: payment.reference,
       });
 
-      // Create payment record with split amounts
+      // Create payment record with split amounts and store payment URL in metadata
       await storage.createPayment({
         bookingId: booking.id,
         amount: booking.totalAmount,
         paystackReference: payment.reference,
         platformFee: splitAmounts.platformFee.toString(),
         companionEarning: splitAmounts.companionEarning.toString(),
+        metadata: {
+          authorizationUrl: payment.authorization_url,
+          accessCode: payment.access_code,
+        },
       });
 
       // Update booking to accepted status
@@ -706,6 +710,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         booking: updated,
         paymentUrl: payment.authorization_url,
         reference: payment.reference,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get payment URL for accepted booking
+  app.get("/api/bookings/:id/payment-url", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Verify user owns this booking
+      if (booking.clientId !== req.session.user.id) {
+        return res.status(403).json({ message: "Not your booking" });
+      }
+
+      if (booking.status !== "accepted") {
+        return res.status(400).json({ message: "Booking is not pending payment" });
+      }
+
+      // Get payment record
+      const payment = await storage.getPaymentByBooking(booking.id);
+      if (!payment || !payment.metadata) {
+        return res.status(404).json({ message: "Payment information not found" });
+      }
+
+      const metadata = payment.metadata as any;
+      return res.json({
+        paymentUrl: metadata.authorizationUrl,
+        reference: payment.paystackReference,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });

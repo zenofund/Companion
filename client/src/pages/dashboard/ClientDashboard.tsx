@@ -35,6 +35,7 @@ export default function ClientDashboard() {
     enabled: !!selectedBooking && ratingModalOpen,
   });
 
+  const pendingPaymentBookings = bookings?.filter((b: any) => b.status === "accepted") || [];
   const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];
   const completedBookings = bookings?.filter((b: any) => b.status === "completed") || [];
 
