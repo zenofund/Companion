@@ -366,65 +366,63 @@ export default function ClientDashboard() {
                     
                     return (
                       <Card key={booking.id} className="border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/30" data-testid={`pending-payment-${booking.id}`}>
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-heading text-lg font-semibold">
-                                  {booking.companionName}
-                                </h3>
-                                <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
-                                  Payment Required
-                                </Badge>
+                        <CardContent className="p-4 md:p-6">
+                          <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <h3 className="font-heading text-lg font-semibold">
+                                {booking.companionName}
+                              </h3>
+                              <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 w-fit">
+                                Payment Required
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{format(new Date(booking.bookingDate), "PPP")}</span>
                               </div>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
-                                <div>
-                                  <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                                  <p className="text-xs">Date</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">{booking.hours} hours</p>
-                                  <p className="text-xs">Duration</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                                  <p className="text-xs">Amount</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                                  <p className="text-xs">Location</p>
-                                </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{booking.hours} hours</span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200 px-3 py-2 rounded-md">
-                                <Banknote className="h-4 w-4" />
-                                <span>
-                                  Complete payment to confirm your booking
-                                </span>
+                              <div className="flex items-center gap-2">
+                                <Banknote className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">₦{booking.totalAmount}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{booking.meetingLocation}</span>
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={async () => {
-                                  try {
-                                    const response = await fetch(`/api/bookings/${booking.id}/payment-url`);
-                                    if (!response.ok) throw new Error("Failed to get payment URL");
-                                    const data = await response.json();
-                                    window.location.href = data.paymentUrl;
-                                  } catch (error) {
-                                    toast({
-                                      title: "Error",
-                                      description: "Failed to get payment link. Please try again.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                                data-testid={`button-pay-now-${booking.id}`}
-                              >
-                                <Banknote className="h-4 w-4 mr-2" />
-                                Pay Now
-                              </Button>
+
+                            <div className="flex items-center gap-2 text-sm bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200 px-3 py-2 rounded-md">
+                              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                              <span>Complete payment to confirm your booking</span>
                             </div>
+
+                            <Button
+                              size="sm"
+                              className="w-full sm:w-auto"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/bookings/${booking.id}/payment-url`);
+                                  if (!response.ok) throw new Error("Failed to get payment URL");
+                                  const data = await response.json();
+                                  window.location.href = data.paymentUrl;
+                                } catch (error) {
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to get payment link. Please try again.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              data-testid={`button-pay-now-${booking.id}`}
+                            >
+                              <Banknote className="h-4 w-4 mr-2" />
+                              Pay Now
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -439,41 +437,42 @@ export default function ClientDashboard() {
               {activeBookings.length > 0 ? (
                 activeBookings.map((booking: any) => (
                   <Card key={booking.id} data-testid={`booking-card-${booking.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
+                    <CardContent className="p-4 md:p-6">
+                      <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <h3 className="font-heading text-lg font-semibold">
                             {booking.companionName}
                           </h3>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {format(new Date(booking.bookingDate), "PPP")}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {booking.hours} hours
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Banknote className="h-4 w-4" />
-                              ₦{booking.totalAmount}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">
+                          <Badge variant="default" className="w-fit">
                             {booking.status}
                           </Badge>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => setLocation(`/booking/${booking.id}/chat`)}
-                            data-testid={`button-chat-${booking.id}`}
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            Chat
-                          </Button>
                         </div>
+
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium">{format(new Date(booking.bookingDate), "PPP")}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium">{booking.hours} hours</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Banknote className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium">₦{booking.totalAmount}</span>
+                          </div>
+                        </div>
+
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                          onClick={() => setLocation(`/booking/${booking.id}/chat`)}
+                          data-testid={`button-chat-${booking.id}`}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Chat
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -508,48 +507,50 @@ export default function ClientDashboard() {
                     
                     return (
                       <Card key={booking.id} className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30" data-testid={`pending-completion-${booking.id}`}>
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-heading text-lg font-semibold">
-                                  {booking.companionName}
-                                </h3>
-                                <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                                  Pending Confirmation
-                                </Badge>
+                        <CardContent className="p-4 md:p-6">
+                          <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <h3 className="font-heading text-lg font-semibold">
+                                {booking.companionName}
+                              </h3>
+                              <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 w-fit">
+                                Pending Confirmation
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{format(new Date(booking.bookingDate), "PPP")}</span>
                               </div>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
-                                <div>
-                                  <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                                  <p className="text-xs">Date</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">{booking.hours} hours</p>
-                                  <p className="text-xs">Duration</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                                  <p className="text-xs">Amount</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                                  <p className="text-xs">Location</p>
-                                </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{booking.hours} hours</span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
-                                <Clock className="h-4 w-4" />
-                                <span>
-                                  {hoursRemaining > 0 
-                                    ? `Auto-completes in ${hoursRemaining} hours if not confirmed`
-                                    : "Will auto-complete soon"}
-                                </span>
+                              <div className="flex items-center gap-2">
+                                <Banknote className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">₦{booking.totalAmount}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium">{booking.meetingLocation}</span>
                               </div>
                             </div>
-                            <div className="flex gap-2">
+
+                            <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
+                              <Clock className="h-4 w-4 flex-shrink-0" />
+                              <span>
+                                {hoursRemaining > 0 
+                                  ? `Auto-completes in ${hoursRemaining} hours if not confirmed`
+                                  : "Will auto-complete soon"}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="w-full sm:w-auto"
                                 onClick={() => disputeMutation.mutate(booking.id)}
                                 disabled={disputeMutation.isPending}
                                 data-testid={`button-dispute-${booking.id}`}
@@ -559,6 +560,7 @@ export default function ClientDashboard() {
                               </Button>
                               <Button
                                 size="sm"
+                                className="w-full sm:w-auto"
                                 onClick={() => confirmCompletionMutation.mutate(booking.id)}
                                 disabled={confirmCompletionMutation.isPending}
                                 data-testid={`button-confirm-${booking.id}`}
@@ -583,42 +585,43 @@ export default function ClientDashboard() {
                 <div className="space-y-4">
                   {completedBookings.map((booking: any) => (
                     <Card key={booking.id} data-testid={`completed-booking-${booking.id}`}>
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2">
+                      <CardContent className="p-4 md:p-6">
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <h3 className="font-heading text-lg font-semibold">
                               {booking.companionName}
                             </h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                {format(new Date(booking.bookingDate), "PPP")}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {booking.hours} hours
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Banknote className="h-4 w-4" />
-                                ₦{booking.totalAmount}
-                              </div>
+                            <Badge variant="secondary" className="w-fit">Completed</Badge>
+                          </div>
+
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium">{format(new Date(booking.bookingDate), "PPP")}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium">{booking.hours} hours</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Banknote className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium">₦{booking.totalAmount}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">Completed</Badge>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedBooking(booking);
-                                setRatingModalOpen(true);
-                              }}
-                              data-testid={`button-rate-${booking.id}`}
-                            >
-                              <Star className="h-4 w-4 mr-2" />
-                              Rate
-                            </Button>
-                          </div>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full sm:w-auto"
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setRatingModalOpen(true);
+                            }}
+                            data-testid={`button-rate-${booking.id}`}
+                          >
+                            <Star className="h-4 w-4 mr-2" />
+                            Rate
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
