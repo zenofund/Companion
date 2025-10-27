@@ -25,18 +25,21 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
+    console.log('[Chat WebSocket] Attempting connection to:', wsUrl);
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('[Chat WebSocket] Connected successfully');
     };
 
     ws.current.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        console.log('[Chat WebSocket] Received message:', message);
         
         // Handle auth success
         if (message.type === 'auth' && message.success) {
+          console.log('[Chat WebSocket] Authentication successful');
           setIsConnected(true);
         }
         
@@ -44,20 +47,22 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
           onMessage(message);
         }
       } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
+        console.error("[Chat WebSocket] Error parsing message:", error);
       }
     };
 
-    ws.current.onclose = () => {
+    ws.current.onclose = (event) => {
+      console.log('[Chat WebSocket] Connection closed. Code:', event.code, 'Reason:', event.reason);
       setIsConnected(false);
       // Reconnect after 3 seconds
       reconnectTimeoutRef.current = setTimeout(() => {
+        console.log('[Chat WebSocket] Attempting reconnect...');
         connect();
       }, 3000);
     };
 
     ws.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      console.error("[Chat WebSocket] Connection error:", error);
     };
   }, [onMessage]);
 
