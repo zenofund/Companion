@@ -298,11 +298,11 @@ export default function CompanionProfile() {
             </TabsContent>
 
             <TabsContent value="gallery" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex overflow-x-auto gap-4 snap-x snap-mandatory scrollbar-hide md:grid md:grid-cols-3 md:overflow-x-visible">
                 {companion.gallery?.map((image, index) => (
                   <div
                     key={index}
-                    className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover-elevate group"
+                    className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover-elevate group flex-shrink-0 w-full snap-center md:w-auto"
                     onClick={() => setLightboxIndex(index)}
                     data-testid={`image-gallery-${index}`}
                   >
