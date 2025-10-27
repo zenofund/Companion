@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 27, 2025 - Mobile UX Enhancement: Responsive Gallery & Booking Cards**
+- Redesigned companion gallery for mobile: single full-width image with horizontal snap scrolling
+- Gallery uses `scrollbar-hide` utility for clean touch experience while maintaining desktop grid view
+- Completely restructured all booking card layouts for mobile-first design
+- Booking cards now display info in vertical rows with icons (Calendar, Clock, Banknote, MapPin)
+- Each booking type (pending payment, active, pending completion, completed) has consistent row-based layout
+- Buttons now full-width on mobile, inline on desktop for better touch targets
+- Reduced card padding on mobile (p-4) while maintaining spacing on desktop (md:p-6)
+- Restructured Companion Dashboard header: welcome text, subtitle, and availability toggle now stack vertically
+- All changes maintain existing functionality while dramatically improving mobile readability and touch interaction
+
 **October 27, 2025 - Fixed Client Payment Workflow & Pending Payment Display**
 - Identified and fixed critical bug: clients couldn't see bookings awaiting payment after companion acceptance
 - Root cause: bookings with "accepted" status weren't displayed on client dashboard (only "active" shown)
