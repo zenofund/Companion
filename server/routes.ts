@@ -843,9 +843,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      console.log("[DEBUG] Fetching bookings for client:", req.session.user.id);
       const bookings = await storage.getClientBookings(req.session.user.id);
+      console.log("[DEBUG] Found bookings:", bookings.length);
       return res.json(bookings);
     } catch (error: any) {
+      console.error("[ERROR] getClientBookings failed:", error);
       return res.status(500).json({ message: error.message });
     }
   });
@@ -878,9 +881,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Companion profile not found" });
       }
 
+      console.log("[DEBUG] Fetching pending bookings for companion:", companion.id);
       const bookings = await storage.getPendingBookings(companion.id);
+      console.log("[DEBUG] Found pending bookings:", bookings.length);
       return res.json(bookings);
     } catch (error: any) {
+      console.error("[ERROR] getPendingBookings failed:", error);
       return res.status(500).json({ message: error.message });
     }
   });
