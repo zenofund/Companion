@@ -10,6 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 27, 2025 - Progressive Web App (PWA) Implementation**
+- Implemented full PWA functionality for 100% native app experience
+- Created full-screen branded splash screen with #5D866C background and fliQ logo
+- Splash screen features smooth fade-in animation and auto-dismisses when app loads
+- Added comprehensive PWA manifest.json with proper branding and icon configurations
+- Generated all required icon sizes (192x192, 512x512, maskable variants) from fliQ logo
+- Implemented service worker for offline support with smart caching strategy
+- Added iOS-specific meta tags for standalone mode: apple-mobile-web-app-capable, status-bar-style
+- Set viewport-fit=cover for edge-to-edge content on notched devices
+- App now runs in standalone mode with zero browser UI (no address bar, tabs, or browser chrome)
+- Service worker successfully registered and caching static assets
+- Ready for "Add to Home Screen" installation on both iOS and Android
+
 **October 27, 2025 - Mobile UX Enhancement: Responsive Gallery & Booking Cards**
 - Redesigned companion gallery for mobile: single full-width image with horizontal snap scrolling
 - Gallery uses `scrollbar-hide` utility for clean touch experience while maintaining desktop grid view
