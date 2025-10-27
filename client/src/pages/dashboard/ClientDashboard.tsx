@@ -49,21 +49,21 @@ export default function ClientDashboard() {
         description: "Your booking has been confirmed. The companion will be notified.",
       });
       // Clear the query parameter
-      setLocation("/client-dashboard");
+      setLocation("/dashboard/client");
     } else if (paymentStatus === "failed") {
       toast({
         title: "Payment failed",
         description: "Your payment could not be processed. Please try again.",
         variant: "destructive",
       });
-      setLocation("/client-dashboard");
+      setLocation("/dashboard/client");
     } else if (paymentStatus === "error") {
       toast({
         title: "Payment error",
         description: "An error occurred while processing your payment.",
         variant: "destructive",
       });
-      setLocation("/client-dashboard");
+      setLocation("/dashboard/client");
     }
   }, [toast, setLocation]);
 

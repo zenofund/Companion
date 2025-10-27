@@ -988,14 +988,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Redirect to client dashboard with success message
-        return res.redirect("/client-dashboard?payment=success");
+        return res.redirect("/dashboard/client?payment=success");
       } else {
         console.error("[Payment Callback] Payment verification failed:", verification.status);
-        return res.redirect("/client-dashboard?payment=failed");
+        return res.redirect("/dashboard/client?payment=failed");
       }
     } catch (error: any) {
       console.error("[Payment Callback] Error processing callback:", error);
-      return res.redirect("/client-dashboard?payment=error");
+      return res.redirect("/dashboard/client?payment=error");
     }
   });
 
