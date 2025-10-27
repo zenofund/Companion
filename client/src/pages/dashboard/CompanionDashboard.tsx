@@ -147,28 +147,25 @@ export default function CompanionDashboard() {
       
       <main className="pt-28 container mx-auto px-4 py-8">
         {/* Header with Availability Toggle */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-heading text-3xl font-bold mb-2" data-testid="text-welcome">
-              Welcome back, {user?.name}!
-            </h1>
-            <p className="text-muted-foreground">
-              Manage your bookings and earnings
-            </p>
-          </div>
+        <div className="space-y-4 mb-8">
+          <h1 className="font-heading text-3xl font-bold" data-testid="text-welcome">
+            Welcome back, {user?.name}!
+          </h1>
           
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Availability</p>
-              <p className="font-semibold">
-                {profile?.isAvailable ? "Online" : "Offline"}
-              </p>
-            </div>
+          <p className="text-muted-foreground">
+            Manage your bookings and earnings
+          </p>
+          
+          <div className="flex items-center gap-3 pt-2">
+            <span className="text-sm font-medium">Availability:</span>
             <Switch
               checked={profile?.isAvailable || false}
               onCheckedChange={(checked) => toggleAvailabilityMutation.mutate(checked)}
               data-testid="switch-availability"
             />
+            <span className="text-sm font-semibold">
+              {profile?.isAvailable ? "Online" : "Offline"}
+            </span>
           </div>
         </div>
 
