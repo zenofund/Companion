@@ -10,12 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 27, 2025 - Fixed Booking Creation Bug**
-- Fixed critical TypeScript errors preventing bookings from being created or appearing on dashboards
-- Updated insertBookingSchema to allow `requestExpiresAt` field (needed for 24-hour expiry tracking)
-- Removed invalid `status` field from createBooking call (uses database default of "pending")
-- Fixed booking accept endpoint by changing `getUserById()` to correct method `getUser()`
-- Bookings now properly save to database and appear on both client and companion dashboards
+**October 27, 2025 - Fixed Booking Dashboard Display Bug**
+- Fixed critical Express route ordering bug preventing bookings from appearing on dashboards
+- Moved GET /api/bookings/:id route to come AFTER all specific routes (/client, /pending, etc.)
+- Previous issue: parameterized :id route was matching "/client" and treating it as a booking ID
+- Bookings now properly display on both client and companion dashboards
+- Also fixed TypeScript errors: removed invalid `status` field and changed `getUserById()` to `getUser()`
+- Updated insertBookingSchema to allow `requestExpiresAt` field for 24-hour expiry tracking
 
 **October 27, 2025 - Restored Booking Workflow & Added Dispute System**
 - Restructured booking flow to match correct workflow: request → companion accepts → payment → chat → complete → confirm/dispute
