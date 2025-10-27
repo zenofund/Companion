@@ -720,6 +720,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Booking not found" });
       }
 
+      // Set to pending_completion and record timestamp
+      const updated = await storage.updateBooking(booking.id, { 
+        status: "pending_completion",
+        completionRequestedAt: new Date()
+      });
+      return res.json(updated);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Client confirms booking completion
+  app.post("/api/bookings/:id/confirm-completion", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Verify client owns this booking
+      if (booking.clientId !== req.session.user.id) {
+        return res.status(403).json({ message: "Not your booking" });
+      }
+
+      if (booking.status !== "pending_completion") {
+        return res.status(400).json({ message: "Booking is not pending completion" });
+      }
+
       const updated = await storage.updateBooking(booking.id, { status: "completed" });
       return res.json(updated);
     } catch (error: any) {
@@ -734,6 +766,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const bookings = await storage.getClientBookings(req.session.user.id);
+      return res.json(bookings);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/bookings/client/pending-completion", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      // Auto-complete any requests older than 48 hours
+      await storage.autoCompleteExpiredRequests();
+      
+      // Fetch remaining pending completion bookings
+      const bookings = await storage.getPendingCompletionBookings(req.session.user.id);
       return res.json(bookings);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });

@@ -47,6 +47,8 @@ export interface IStorage {
   getPendingBookings(companionId: string): Promise<Booking[]>;
   getActiveBookings(companionId: string): Promise<any[]>;
   getCompletedBookings(companionId: string): Promise<any[]>;
+  getPendingCompletionBookings(clientId: string): Promise<any[]>;
+  autoCompleteExpiredRequests(): Promise<number>;
   getCompanionStats(companionId: string): Promise<{
     activeBookings: number;
     todayEarnings: string;
@@ -263,6 +265,52 @@ export class DatabaseStorage implements IStorage {
       clientName: r.client?.name || "Unknown",
       clientAvatar: r.client?.avatar || null,
     }));
+  }
+
+  async getPendingCompletionBookings(clientId: string): Promise<any[]> {
+    const results = await db
+      .select({
+        booking: bookings,
+        companion: companions,
+        companionUser: users,
+      })
+      .from(bookings)
+      .leftJoin(companions, eq(bookings.companionId, companions.id))
+      .leftJoin(users, eq(companions.userId, users.id))
+      .where(
+        and(
+          eq(bookings.clientId, clientId),
+          eq(bookings.status, "pending_completion")
+        )
+      )
+      .orderBy(desc(bookings.completionRequestedAt));
+    
+    return results.map(r => ({
+      ...r.booking,
+      companionName: r.companionUser?.name || "Unknown",
+      companionAvatar: r.companionUser?.avatar || null,
+    }));
+  }
+
+  async autoCompleteExpiredRequests(): Promise<number> {
+    const fortyEightHoursAgo = new Date();
+    fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+    
+    const expiredBookings = await db
+      .select()
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.status, "pending_completion"),
+          sql`${bookings.completionRequestedAt} < ${fortyEightHoursAgo}`
+        )
+      );
+
+    for (const booking of expiredBookings) {
+      await this.updateBooking(booking.id, { status: "completed" });
+    }
+
+    return expiredBookings.length;
   }
 
   async getCompanionStats(companionId: string): Promise<{
