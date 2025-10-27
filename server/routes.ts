@@ -1145,7 +1145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const booking = await storage.getBooking(verification.metadata.bookingId);
           if (booking && booking.status !== "rejected") {
             await storage.updateBooking(verification.metadata.bookingId, {
-              status: "accepted",
+              status: "active",
             });
           }
           console.log("[Payment Callback] Payment processed successfully, redirecting to dashboard");
@@ -1177,7 +1177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const booking = await storage.getBooking(verification.metadata.bookingId);
           if (booking && booking.status !== "rejected") {
             await storage.updateBooking(verification.metadata.bookingId, {
-              status: "accepted",
+              status: "active",
             });
           }
         }
