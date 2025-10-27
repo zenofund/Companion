@@ -810,33 +810,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/bookings/:id", async (req, res) => {
-    if (!req.session.user) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const booking = await storage.getBooking(req.params.id);
-      if (!booking) {
-        return res.status(404).json({ message: "Booking not found" });
-      }
-
-      // Verify user is part of this booking
-      const companion = await storage.getCompanion(booking.companionId);
-      if (!companion) {
-        return res.status(404).json({ message: "Companion not found" });
-      }
-
-      if (booking.clientId !== req.session.user.id && companion.userId !== req.session.user.id) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-
-      return res.json(booking);
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message });
-    }
-  });
-
   app.get("/api/bookings/client", async (req, res) => {
     if (!req.session.user) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -922,6 +895,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const bookings = await storage.getCompletedBookings(companion.id);
       return res.json(bookings);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get single booking by ID (must come AFTER specific routes to avoid conflicts)
+  app.get("/api/bookings/:id", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Verify user is part of this booking
+      const companion = await storage.getCompanion(booking.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      if (booking.clientId !== req.session.user.id && companion.userId !== req.session.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      return res.json(booking);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
