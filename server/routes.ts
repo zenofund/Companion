@@ -699,7 +699,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companionEarning: splitAmounts.companionEarning.toString(),
         metadata: {
           authorizationUrl: payment.authorization_url,
-          accessCode: payment.access_code,
         },
       });
 
