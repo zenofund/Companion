@@ -44,7 +44,7 @@ interface MapViewProps {
 function MapRecenter({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 13);
+    map.setView(center, 11);
   }, [center, map]);
   return null;
 }
@@ -105,7 +105,7 @@ export function MapView({ companions, userLocation, onCompanionClick }: MapViewP
   return (
     <MapContainer
       center={[userLocation.lat, userLocation.lng]}
-      zoom={13}
+      zoom={11}
       className="h-full w-full rounded-lg overflow-hidden"
       style={{ height: "100%", minHeight: "600px" }}
     >

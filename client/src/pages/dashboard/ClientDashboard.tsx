@@ -138,6 +138,7 @@ export default function ClientDashboard() {
         : undefined;
       return { ...c, distance };
     })
+    .filter((c: any) => c.distance === undefined || c.distance <= 50)
     .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999));
 
   // Confirm completion mutation
