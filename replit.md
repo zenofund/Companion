@@ -10,6 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 27, 2025 - Restored Booking Workflow & Added Dispute System**
+- Restructured booking flow to match correct workflow: request → companion accepts → payment → chat → complete → confirm/dispute
+- Booking creation now sends pending request to companion (no immediate payment)
+- Payment initialization moved to companion accept endpoint - triggers when companion accepts request
+- Added "disputed" status to booking enum for handling completion disputes
+- Created POST /api/bookings/:id/dispute endpoint for clients to dispute completion requests
+- Added GET /api/bookings/:id endpoint to fix "Booking not found" error in chat
+- Updated Client Dashboard with both Confirm and Dispute buttons for pending completions
+- Dispute button allows clients to reject fraudulent completion claims
+- BookingModal now shows success message instead of redirecting to payment immediately
+- Extended booking request expiry from 15 minutes to 24 hours for companion review
+- Chat now accessible after companion accepts and payment is processed
+
 **October 27, 2025 - Client Confirmation System with 48-Hour Auto-Completion**
 - Implemented fraud prevention system requiring client confirmation before booking completion
 - Added `pending_completion` status to bookings enum and `completionRequestedAt` timestamp field

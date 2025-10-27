@@ -85,12 +85,10 @@ export function BookingModal({ open, onOpenChange, companion }: BookingModalProp
     onSuccess: (data: any) => {
       toast({
         title: "Booking request sent!",
-        description: "Redirecting to payment...",
+        description: data.message || "The companion will review your request shortly.",
       });
-      // Redirect to Paystack payment
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      }
+      onOpenChange(false);
+      form.reset();
     },
     onError: (error: any) => {
       toast({

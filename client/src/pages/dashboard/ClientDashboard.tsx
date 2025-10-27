@@ -162,6 +162,29 @@ export default function ClientDashboard() {
     },
   });
 
+  // Dispute mutation
+  const disputeMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      return await apiRequest("POST", `/api/bookings/${bookingId}/dispute`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/client"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings/client/pending-completion"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/client"] });
+      toast({
+        title: "Dispute opened",
+        description: "The booking has been marked as disputed. Our team will review it shortly.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open dispute",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Header user={user} />
@@ -436,15 +459,27 @@ export default function ClientDashboard() {
                                 </span>
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={() => confirmCompletionMutation.mutate(booking.id)}
-                              disabled={confirmCompletionMutation.isPending}
-                              data-testid={`button-confirm-${booking.id}`}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              {confirmCompletionMutation.isPending ? "Confirming..." : "Confirm Completion"}
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => disputeMutation.mutate(booking.id)}
+                                disabled={disputeMutation.isPending}
+                                data-testid={`button-dispute-${booking.id}`}
+                              >
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                {disputeMutation.isPending ? "Disputing..." : "Dispute"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => confirmCompletionMutation.mutate(booking.id)}
+                                disabled={confirmCompletionMutation.isPending}
+                                data-testid={`button-confirm-${booking.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                {confirmCompletionMutation.isPending ? "Confirming..." : "Confirm"}
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
