@@ -11,6 +11,7 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "accepted",
   "rejected",
   "active",
+  "pending_completion",
   "completed",
   "cancelled",
   "expired"
@@ -74,6 +75,7 @@ export const bookings = pgTable("bookings", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: bookingStatusEnum("status").default("pending"),
   requestExpiresAt: timestamp("request_expires_at"),
+  completionRequestedAt: timestamp("completion_requested_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
