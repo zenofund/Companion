@@ -1,0 +1,38 @@
+{
+  "name": "fliQ - Premium Lifestyle Companion Platform",
+  "short_name": "fliQ",
+  "description": "Discover verified companions for exclusive events, travel, and private experiences",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#5D866C",
+  "theme_color": "#5D866C",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["lifestyle", "social", "travel"],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
