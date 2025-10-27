@@ -738,14 +738,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get payment record
       const payment = await storage.getPaymentByBooking(booking.id);
-      if (!payment || !payment.metadata) {
+      if (!payment) {
         return res.status(404).json({ message: "Payment information not found" });
       }
 
+      // Check if metadata exists with payment URL
       const metadata = payment.metadata as any;
+      if (metadata && metadata.authorizationUrl) {
+        return res.json({
+          paymentUrl: metadata.authorizationUrl,
+          reference: payment.paystackReference,
+        });
+      }
+
+      // If no metadata, re-initialize payment (for old bookings)
+      const client = await storage.getUser(booking.clientId);
+      const companion = await storage.getCompanion(booking.companionId);
+      
+      if (!client || !companion) {
+        return res.status(404).json({ message: "Client or companion not found" });
+      }
+
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const callbackBaseUrl = `${protocol}://${host}`;
+
+      const platformFee = parseFloat(await storage.getAdminSetting("platform_fee") || "20");
+      const { calculateSplitAmounts } = await import("./paystack");
+      const splitAmounts = calculateSplitAmounts(parseFloat(booking.totalAmount), platformFee);
+
+      const newPayment = await initializePayment(
+        client.email,
+        parseFloat(booking.totalAmount),
+        {
+          bookingId: booking.id,
+          userId: client.id,
+          companionId: companion.id,
+        },
+        callbackBaseUrl,
+        companion.paystackSubaccountCode || undefined,
+        splitAmounts.platformFee
+      );
+
+      // Update payment with new URL
+      await storage.updatePayment(payment.id, {
+        paystackReference: newPayment.reference,
+        metadata: {
+          authorizationUrl: newPayment.authorization_url,
+        },
+      });
+
       return res.json({
-        paymentUrl: metadata.authorizationUrl,
-        reference: payment.paystackReference,
+        paymentUrl: newPayment.authorization_url,
+        reference: newPayment.reference,
       });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
