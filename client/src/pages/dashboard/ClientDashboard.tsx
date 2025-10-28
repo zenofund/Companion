@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, List, CheckCircle, AlertCircle } from "lucide-react";
+import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, List, CheckCircle, AlertCircle, MapPin } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { MapView } from "@/components/map/MapView";
