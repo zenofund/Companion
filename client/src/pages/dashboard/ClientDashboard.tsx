@@ -24,13 +24,13 @@ export default function ClientDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user } = useQuery({ queryKey: ["/api/auth/me"] });
-  const { data: bookings } = useQuery({ queryKey: ["/api/bookings/client"] });
-  const { data: pendingCompletionBookings } = useQuery({ queryKey: ["/api/bookings/client/pending-completion"] });
-  const { data: stats } = useQuery({ queryKey: ["/api/stats/client"] });
+  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: bookings } = useQuery<any[]>({ queryKey: ["/api/bookings/client"] });
+  const { data: pendingCompletionBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/client/pending-completion"] });
+  const { data: stats } = useQuery<any>({ queryKey: ["/api/stats/client"] });
   
   // Fetch rating for selected booking when modal opens
-  const { data: existingRating } = useQuery({
+  const { data: existingRating } = useQuery<any>({
     queryKey: ["/api/ratings", selectedBooking?.id],
     enabled: !!selectedBooking && ratingModalOpen,
   });
