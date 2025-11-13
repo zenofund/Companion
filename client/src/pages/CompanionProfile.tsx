@@ -529,6 +529,21 @@ export default function CompanionProfile() {
   );
 }
 
+// Helper function to safely format review dates
+function formatReviewDate(createdAt?: string | null): string {
+  if (!createdAt) return "Recently";
+  
+  try {
+    const date = new Date(createdAt);
+    if (!Number.isFinite(date.getTime()) || Number.isNaN(date.getTime())) {
+      return "Recently";
+    }
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch {
+    return "Recently";
+  }
+}
+
 // ReviewsList component
 interface Review {
   rating: number;
@@ -595,7 +610,7 @@ function ReviewsList({ companionId }: { companionId: string }) {
                 ))}
               </div>
               <span className="text-sm text-muted-foreground" data-testid="text-review-date">
-                {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+                {formatReviewDate(review.createdAt)}
               </span>
             </div>
 
