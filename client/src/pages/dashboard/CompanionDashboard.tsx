@@ -288,7 +288,7 @@ export default function CompanionDashboard() {
                           {calculateTimeRemaining(request.requestExpiresAt)}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground">{format(new Date(request.bookingDate), "PPP")}</p>
                           <p className="text-xs">Date</p>
@@ -367,7 +367,7 @@ export default function CompanionDashboard() {
                           {booking.status === "accepted" ? "Upcoming" : "In Progress"}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
                           <p className="text-xs">Date</p>
@@ -456,7 +456,7 @@ export default function CompanionDashboard() {
                             Pending
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
                           <div>
                             <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
                             <p className="text-xs">Date</p>
@@ -515,7 +515,7 @@ export default function CompanionDashboard() {
                         </h3>
                         <Badge variant="secondary" className="text-xs">Completed</Badge>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
                           <p className="text-xs">Date</p>
