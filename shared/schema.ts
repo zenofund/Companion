@@ -31,6 +31,8 @@ export const users = pgTable("users", {
   avatar: text("avatar"),
   isVerified: boolean("is_verified").default(false),
   isBanned: boolean("is_banned").default(false),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
