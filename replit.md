@@ -21,6 +21,7 @@ Preferred communication style: Simple, everyday language.
 **API Endpoints:** Organized RESTful API for authentication, companion management, booking operations, payment processing, chat messaging, favorites management, and admin functions.
 **Feature Specifications:** Implemented a robust booking workflow including request, acceptance, payment, chat, completion request, client confirmation (with 48-hour auto-completion), and dispute system. Critical payment workflow fixes ensuring proper booking display and payment redirection.
 **Dashboard Stats:** Client dashboard displays real-time metrics calculated from database: Total Spent (sum of completed booking amounts), Active Bookings count, Favorites count, and Average Rating (from ratings given by client). Companion dashboard shows accurate earnings, booking counts, and performance metrics.
+**Booking Data Enrichment:** Both `getClientBookings` and `getCompanionBookings` now join with user/companion tables to return enriched booking objects including companionName and clientName for proper display in rating modals and UI components.
 
 ### Data Storage
 **Database:** Neon Serverless PostgreSQL, managed with Drizzle ORM for type-safe queries and schema migrations.

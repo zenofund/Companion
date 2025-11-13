@@ -192,12 +192,23 @@ export class DatabaseStorage implements IStorage {
     return booking;
   }
 
-  async getClientBookings(clientId: string): Promise<Booking[]> {
-    return await db
-      .select()
+  async getClientBookings(clientId: string): Promise<any[]> {
+    const results = await db
+      .select({
+        booking: bookings,
+        companion: companions,
+        companionUser: users,
+      })
       .from(bookings)
+      .leftJoin(companions, eq(bookings.companionId, companions.id))
+      .leftJoin(users, eq(companions.userId, users.id))
       .where(eq(bookings.clientId, clientId))
       .orderBy(desc(bookings.createdAt));
+    
+    return results.map(r => ({ 
+      ...r.booking, 
+      companionName: r.companionUser?.name || "Unknown",
+    }));
   }
 
   async getCompanionBookings(companionId: string): Promise<any[]> {
@@ -205,13 +216,19 @@ export class DatabaseStorage implements IStorage {
       .select({
         booking: bookings,
         payment: payments,
+        client: users,
       })
       .from(bookings)
       .leftJoin(payments, eq(bookings.id, payments.bookingId))
+      .leftJoin(users, eq(bookings.clientId, users.id))
       .where(eq(bookings.companionId, companionId))
       .orderBy(desc(bookings.createdAt));
     
-    return results.map(r => ({ ...r.booking, payment: r.payment }));
+    return results.map(r => ({ 
+      ...r.booking, 
+      payment: r.payment,
+      clientName: r.client?.name || "Unknown",
+    }));
   }
 
   async getPendingBookings(companionId: string): Promise<any[]> {
