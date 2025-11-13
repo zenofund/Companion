@@ -357,7 +357,7 @@ export default function ClientDashboard() {
                   <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-500" />
                   <h3 className="font-heading text-xl font-semibold">Pending Payment</h3>
                 </div>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {pendingPaymentBookings.map((booking: any) => {
                     const expiresAt = booking.requestExpiresAt ? new Date(booking.requestExpiresAt) : null;
                     const timeLeft = expiresAt 
@@ -433,7 +433,7 @@ export default function ClientDashboard() {
             )}
 
             {/* Active Bookings */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {activeBookings.length > 0 ? (
                 activeBookings.map((booking: any) => (
                   <Card key={booking.id} data-testid={`booking-card-${booking.id}`}>
@@ -498,7 +498,7 @@ export default function ClientDashboard() {
                   <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
                   <h3 className="font-heading text-xl font-semibold">Awaiting Your Confirmation</h3>
                 </div>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {pendingCompletionBookings.map((booking: any) => {
                     const completionRequestedAt = booking.completionRequestedAt ? new Date(booking.completionRequestedAt) : null;
                     const hoursRemaining = completionRequestedAt 
@@ -582,7 +582,7 @@ export default function ClientDashboard() {
             {completedBookings.length > 0 && (
               <div className="mt-8">
                 <h3 className="font-heading text-xl font-semibold mb-4">Booking History</h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {completedBookings.map((booking: any) => (
                     <Card key={booking.id} data-testid={`completed-booking-${booking.id}`}>
                       <CardContent className="p-4 md:p-6">
