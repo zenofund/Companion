@@ -384,6 +384,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/companions/:id/reviews", async (req, res) => {
+    try {
+      const companionId = req.params.id;
+      
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(companionId)) {
+        return res.status(404).json({ message: "Invalid companion ID" });
+      }
+
+      // Check if companion exists
+      const companion = await storage.getCompanion(companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      const reviews = await storage.getCompanionReviews(companionId);
+      return res.json(reviews);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/companion/profile", async (req, res) => {
     if (!req.session.user) {
       return res.status(401).json({ message: "Not authenticated" });

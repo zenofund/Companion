@@ -25,7 +25,7 @@ import {
   type InsertUserFavorite,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, desc, gte } from "drizzle-orm";
+import { eq, and, sql, desc, gte, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -75,6 +75,7 @@ export interface IStorage {
   createRating(rating: InsertRating): Promise<Rating>;
   getRatingByBooking(bookingId: string): Promise<Rating | undefined>;
   updateRating(id: string, updates: Partial<Rating>): Promise<Rating>;
+  getCompanionReviews(companionId: string): Promise<any[]>;
 
   // Favorites
   addFavorite(userId: string, companionId: string): Promise<UserFavorite>;
@@ -495,6 +496,38 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(ratings)
       .where(eq(ratings.companionId, companionId));
+  }
+
+  async getCompanionReviews(companionId: string): Promise<any[]> {
+    const results = await db
+      .select({
+        rating: ratings.clientRating,
+        review: ratings.clientReview,
+        createdAt: ratings.createdAt,
+        clientName: users.name,
+      })
+      .from(ratings)
+      .leftJoin(users, eq(ratings.clientId, users.id))
+      .where(
+        and(
+          eq(ratings.companionId, companionId),
+          isNotNull(ratings.clientRating),
+          isNotNull(ratings.clientReview)
+        )
+      )
+      .orderBy(desc(ratings.createdAt))
+      .limit(20);
+    
+    // Sanitize client names for privacy
+    return results.map(r => ({
+      rating: r.rating,
+      review: r.review,
+      createdAt: r.createdAt,
+      reviewerName: r.clientName 
+        ? `${r.clientName.split(' ')[0]} ${r.clientName.split(' ').slice(1).map((n: string) => n[0]).join('')}.`
+        : "Verified client",
+      verified: true,
+    }));
   }
 
   // Favorites
