@@ -57,8 +57,31 @@ export default function BookingChat() {
     enabled: !!booking?.clientId && user?.role === "companion",
   });
 
-  const { data: rating, isLoading: isLoadingRating } = useQuery<any>({
-    queryKey: ["/api/ratings", bookingId],
+  const { data: rating, isLoading: isLoadingRating, isError: isRatingError } = useQuery<{
+    clientRating?: number | null;
+    clientReview?: string | null;
+    companionRating?: number | null;
+    companionReview?: string | null;
+  } | null>({
+    queryKey: [`/api/ratings/${bookingId}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/ratings/${bookingId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error('Failed to fetch rating');
+      }
+      const data = await res.json();
+      if (!data) return null;
+      
+      // Convert snake_case to camelCase and ensure numeric ratings
+      return {
+        clientRating: data.client_rating != null ? Number(data.client_rating) : null,
+        clientReview: data.client_review ?? null,
+        companionRating: data.companion_rating != null ? Number(data.companion_rating) : null,
+        companionReview: data.companion_review ?? null,
+      };
+    },
     enabled: !!bookingId,
   });
 
@@ -218,7 +241,13 @@ export default function BookingChat() {
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                       </div>
-                    ) : !rating ? (
+                    ) : isRatingError ? (
+                      <div className="text-center py-8">
+                        <p className="text-destructive" data-testid="text-rating-error">
+                          Failed to load reviews
+                        </p>
+                      </div>
+                    ) : (rating == null || (rating.clientRating == null && rating.companionRating == null)) ? (
                       <div className="text-center py-8">
                         <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                         <p className="text-muted-foreground" data-testid="text-no-rating">
@@ -228,7 +257,7 @@ export default function BookingChat() {
                     ) : (
                       <div className="space-y-6">
                         {/* Client's rating of companion */}
-                        {rating.clientRating && (
+                        {rating.clientRating != null && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium">Client's Review</p>
@@ -237,7 +266,7 @@ export default function BookingChat() {
                                   <Star
                                     key={star}
                                     className={`h-4 w-4 ${
-                                      star <= rating.clientRating
+                                      star <= (rating.clientRating ?? 0)
                                         ? "fill-yellow-400 text-yellow-400"
                                         : "text-gray-300"
                                     }`}
@@ -255,7 +284,7 @@ export default function BookingChat() {
                         )}
 
                         {/* Companion's rating of client */}
-                        {rating.companionRating && (
+                        {rating.companionRating != null && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium">Companion's Review</p>
@@ -264,7 +293,7 @@ export default function BookingChat() {
                                   <Star
                                     key={star}
                                     className={`h-4 w-4 ${
-                                      star <= rating.companionRating
+                                      star <= (rating.companionRating ?? 0)
                                         ? "fill-yellow-400 text-yellow-400"
                                         : "text-gray-300"
                                     }`}
