@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateAge } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow } from "date-fns";
 import { 
   MapPin, 
   Calendar, 
@@ -416,13 +417,7 @@ export default function CompanionProfile() {
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <p className="text-muted-foreground text-center py-8" data-testid="text-no-reviews">
-                    No reviews yet
-                  </p>
-                </CardContent>
-              </Card>
+              <ReviewsList companionId={params?.id || ""} />
             </TabsContent>
           </Tabs>
         </section>
@@ -530,6 +525,100 @@ export default function CompanionProfile() {
           hourlyRate: companion.hourlyRate,
         }}
       />
+    </div>
+  );
+}
+
+// ReviewsList component
+interface Review {
+  rating: number;
+  review: string;
+  createdAt: string;
+  reviewerName: string;
+  verified: boolean;
+}
+
+function ReviewsList({ companionId }: { companionId: string }) {
+  const { data: reviews, isLoading } = useQuery<Review[]>({
+    queryKey: ["/api/companions", companionId, "reviews"],
+    enabled: !!companionId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="animate-pulse space-y-3">
+                <div className="h-4 bg-muted rounded w-1/4"></div>
+                <div className="h-4 bg-muted rounded w-full"></div>
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!reviews || reviews.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center py-8" data-testid="text-no-reviews">
+            No reviews yet
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {reviews.map((review, index) => (
+        <Card key={index} data-testid={`review-${index}`}>
+          <CardContent className="p-6 space-y-3">
+            {/* Header: Rating and Date */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`h-4 w-4 ${
+                      star <= review.rating
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                    data-testid={`star-${star}`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm text-muted-foreground" data-testid="text-review-date">
+                {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+              </span>
+            </div>
+
+            {/* Review Text */}
+            <p className="text-foreground" data-testid="text-review-content">
+              {review.review}
+            </p>
+
+            {/* Reviewer Name and Badge */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium" data-testid="text-reviewer-name">
+                {review.reviewerName}
+              </span>
+              {review.verified && (
+                <Badge variant="secondary" className="text-xs" data-testid="badge-verified">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
