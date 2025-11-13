@@ -9,6 +9,8 @@ import Landing from "@/pages/Landing";
 import CompanionProfile from "@/pages/CompanionProfile";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import ClientDashboard from "@/pages/dashboard/ClientDashboard";
 import CompanionDashboard from "@/pages/dashboard/CompanionDashboard";
 import AdminDashboard from "@/pages/dashboard/AdminDashboard";
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/onboarding/companion" component={CompanionOnboarding} />
       {/* Specific routes must come before dynamic routes */}
       <Route path="/companion/edit-profile" component={EditProfile} />
