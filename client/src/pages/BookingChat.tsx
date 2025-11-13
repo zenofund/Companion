@@ -5,7 +5,8 @@ import { Chat } from "@/components/chat/Chat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Calendar, MapPin, Clock, Banknote } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, ArrowLeft, Calendar, MapPin, Clock, Banknote, Star, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 
 interface Booking {
@@ -54,6 +55,11 @@ export default function BookingChat() {
   const { data: client } = useQuery<any>({
     queryKey: ["/api/users", booking?.clientId],
     enabled: !!booking?.clientId && user?.role === "companion",
+  });
+
+  const { data: rating, isLoading: isLoadingRating } = useQuery<any>({
+    queryKey: ["/api/ratings", bookingId],
+    enabled: !!bookingId,
   });
 
   if (isLoading) {
@@ -130,70 +136,155 @@ export default function BookingChat() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Booking Details */}
+          {/* Booking Details and Review */}
           <div className="lg:col-span-1">
             <Card>
-              <CardHeader>
-                <CardTitle>Booking Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Badge className={getStatusColor(booking.status)}>
-                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                  </Badge>
-                </div>
+              <Tabs defaultValue="details" className="w-full">
+                <CardHeader className="pb-3">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="details" data-testid="tab-details">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Details
+                    </TabsTrigger>
+                    <TabsTrigger value="review" data-testid="tab-review">
+                      <Star className="h-4 w-4 mr-2" />
+                      Review
+                    </TabsTrigger>
+                  </TabsList>
+                </CardHeader>
 
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <CardContent>
+                  <TabsContent value="details" className="mt-0 space-y-4">
                     <div>
-                      <p className="text-sm font-medium">Date</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(booking.bookingDate), "PPP")}
-                      </p>
+                      <Badge className={getStatusColor(booking.status)}>
+                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                      </Badge>
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">Duration</p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.hours} {booking.hours === 1 ? "hour" : "hours"}
-                      </p>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Date</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(booking.bookingDate), "PPP")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Duration</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.hours} {booking.hours === 1 ? "hour" : "hours"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Location</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.meetingLocation}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <Banknote className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Total Amount</p>
+                          <p className="text-sm text-muted-foreground">
+                            ₦{parseFloat(booking.totalAmount).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">Location</p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.meetingLocation}
-                      </p>
-                    </div>
-                  </div>
+                    {booking.specialRequests && (
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-medium mb-2">Special Requests</p>
+                        <p className="text-sm text-muted-foreground">
+                          {booking.specialRequests}
+                        </p>
+                      </div>
+                    )}
+                  </TabsContent>
 
-                  <div className="flex items-start gap-3">
-                    <Banknote className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">Total Amount</p>
-                      <p className="text-sm text-muted-foreground">
-                        ₦{parseFloat(booking.totalAmount).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                  <TabsContent value="review" className="mt-0 space-y-4">
+                    {isLoadingRating ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : !rating ? (
+                      <div className="text-center py-8">
+                        <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-muted-foreground" data-testid="text-no-rating">
+                          No reviews yet
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Client's rating of companion */}
+                        {rating.clientRating && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">Client's Review</p>
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-4 w-4 ${
+                                      star <= rating.clientRating
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
+                                    data-testid={`client-star-${star}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            {rating.clientReview && (
+                              <p className="text-sm text-muted-foreground" data-testid="text-client-review">
+                                "{rating.clientReview}"
+                              </p>
+                            )}
+                          </div>
+                        )}
 
-                {booking.specialRequests && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-medium mb-2">Special Requests</p>
-                    <p className="text-sm text-muted-foreground">
-                      {booking.specialRequests}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
+                        {/* Companion's rating of client */}
+                        {rating.companionRating && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">Companion's Review</p>
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-4 w-4 ${
+                                      star <= rating.companionRating
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
+                                    data-testid={`companion-star-${star}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            {rating.companionReview && (
+                              <p className="text-sm text-muted-foreground" data-testid="text-companion-review">
+                                "{rating.companionReview}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+                </CardContent>
+              </Tabs>
             </Card>
           </div>
 
