@@ -273,52 +273,51 @@ export default function CompanionDashboard() {
         {/* Pending Requests */}
         <div className="mb-8">
           <h2 className="font-heading text-2xl font-semibold mb-4">Pending Requests</h2>
-          <div className="space-y-4">
-            {pendingRequests && pendingRequests.length > 0 ? (
-              pendingRequests.map((request: any) => (
+          {pendingRequests && pendingRequests.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {pendingRequests.map((request: any) => (
                 <Card key={request.id} className="border-accent" data-testid={`request-card-${request.id}`}>
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-heading text-lg font-semibold">
-                            {request.clientName}
-                          </h3>
-                          <Badge variant="outline" className="text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {calculateTimeRemaining(request.requestExpiresAt)}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                          <div>
-                            <p className="font-medium text-foreground">{format(new Date(request.bookingDate), "PPP")}</p>
-                            <p className="text-xs">Date</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{request.hours} hours</p>
-                            <p className="text-xs">Duration</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">₦{request.totalAmount}</p>
-                            <p className="text-xs">Amount</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{request.meetingLocation}</p>
-                            <p className="text-xs">Location</p>
-                          </div>
-                        </div>
-                        {request.specialRequests && (
-                          <p className="mt-3 text-sm text-muted-foreground">
-                            <span className="font-medium">Note:</span> {request.specialRequests}
-                          </p>
-                        )}
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-heading text-lg font-semibold">
+                          {request.clientName}
+                        </h3>
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {calculateTimeRemaining(request.requestExpiresAt)}
+                        </Badge>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>
+                          <p className="font-medium text-foreground">{format(new Date(request.bookingDate), "PPP")}</p>
+                          <p className="text-xs">Date</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{request.hours} hours</p>
+                          <p className="text-xs">Duration</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">₦{request.totalAmount}</p>
+                          <p className="text-xs">Amount</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{request.meetingLocation}</p>
+                          <p className="text-xs">Location</p>
+                        </div>
+                      </div>
+                      {request.specialRequests && (
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-medium">Note:</span> {request.specialRequests}
+                        </p>
+                      )}
+                      <div className="flex gap-2 flex-wrap">
                         <Button
                           variant="default"
                           size="sm"
                           onClick={() => handleBookingAction.mutate({ bookingId: request.id, action: "accept" })}
                           data-testid={`button-accept-${request.id}`}
+                          className="flex-1"
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Accept
@@ -328,6 +327,7 @@ export default function CompanionDashboard() {
                           size="sm"
                           onClick={() => handleBookingAction.mutate({ bookingId: request.id, action: "reject" })}
                           data-testid={`button-reject-${request.id}`}
+                          className="flex-1"
                         >
                           <XCircle className="h-4 w-4 mr-2" />
                           Decline
@@ -336,39 +336,127 @@ export default function CompanionDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground" data-testid="text-no-requests">
-                    No pending requests
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground" data-testid="text-no-requests">
+                  No pending requests
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Active Bookings */}
         <div className="mb-8">
           <h2 className="font-heading text-2xl font-semibold mb-4">Active Bookings</h2>
-          <div className="space-y-4">
-            {reallyActiveBookings && reallyActiveBookings.length > 0 ? (
-              reallyActiveBookings.map((booking: any) => (
+          {reallyActiveBookings && reallyActiveBookings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {reallyActiveBookings.map((booking: any) => (
                 <Card key={booking.id} className="border-primary/20" data-testid={`active-booking-${booking.id}`}>
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-heading text-lg font-semibold">
+                          {booking.clientName}
+                        </h3>
+                        <Badge variant="default" className="text-xs">
+                          {booking.status === "accepted" ? "Upcoming" : "In Progress"}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>
+                          <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
+                          <p className="text-xs">Date</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{booking.hours} hours</p>
+                          <p className="text-xs">Duration</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
+                          <p className="text-xs">Amount</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{booking.meetingLocation}</p>
+                          <p className="text-xs">Location</p>
+                        </div>
+                      </div>
+                      {booking.specialRequests && (
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-medium">Note:</span> {booking.specialRequests}
+                        </p>
+                      )}
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLocation(`/booking/${booking.id}/chat`)}
+                          data-testid={`button-chat-${booking.id}`}
+                          className="flex-1"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Chat
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => completeBookingMutation.mutate(booking.id)}
+                          disabled={completeBookingMutation.isPending}
+                          data-testid={`button-complete-${booking.id}`}
+                          className="flex-1"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {completeBookingMutation.isPending ? "Requesting..." : "Request Completion"}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground" data-testid="text-no-active-bookings">
+                  No active bookings
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Pending Completion Bookings */}
+        {pendingCompletionBookings && pendingCompletionBookings.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+              <h2 className="font-heading text-2xl font-semibold">Awaiting Client Confirmation</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {pendingCompletionBookings.map((booking: any) => {
+                const completionRequestedAt = booking.completionRequestedAt ? new Date(booking.completionRequestedAt) : null;
+                const hoursRemaining = completionRequestedAt 
+                  ? Math.max(0, 48 - Math.floor((Date.now() - completionRequestedAt.getTime()) / (1000 * 60 * 60)))
+                  : 0;
+                
+                return (
+                  <Card key={booking.id} className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30" data-testid={`pending-completion-${booking.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2">
                           <h3 className="font-heading text-lg font-semibold">
                             {booking.clientName}
                           </h3>
-                          <Badge variant="default" className="text-xs">
-                            {booking.status === "accepted" ? "Upcoming" : "In Progress"}
+                          <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs">
+                            Pending
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                        <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                           <div>
                             <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
                             <p className="text-xs">Date</p>
@@ -386,103 +474,13 @@ export default function CompanionDashboard() {
                             <p className="text-xs">Location</p>
                           </div>
                         </div>
-                        {booking.specialRequests && (
-                          <p className="mt-3 text-sm text-muted-foreground">
-                            <span className="font-medium">Note:</span> {booking.specialRequests}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setLocation(`/booking/${booking.id}/chat`)}
-                          data-testid={`button-chat-${booking.id}`}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          Chat
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => completeBookingMutation.mutate(booking.id)}
-                          disabled={completeBookingMutation.isPending}
-                          data-testid={`button-complete-${booking.id}`}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {completeBookingMutation.isPending ? "Requesting..." : "Request Completion"}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground" data-testid="text-no-active-bookings">
-                    No active bookings
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Pending Completion Bookings */}
-        {pendingCompletionBookings && pendingCompletionBookings.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-              <h2 className="font-heading text-2xl font-semibold">Awaiting Client Confirmation</h2>
-            </div>
-            <div className="space-y-4">
-              {pendingCompletionBookings.map((booking: any) => {
-                const completionRequestedAt = booking.completionRequestedAt ? new Date(booking.completionRequestedAt) : null;
-                const hoursRemaining = completionRequestedAt 
-                  ? Math.max(0, 48 - Math.floor((Date.now() - completionRequestedAt.getTime()) / (1000 * 60 * 60)))
-                  : 0;
-                
-                return (
-                  <Card key={booking.id} className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30" data-testid={`pending-completion-${booking.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-heading text-lg font-semibold">
-                              {booking.clientName}
-                            </h3>
-                            <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                              Pending Client Confirmation
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
-                            <div>
-                              <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                              <p className="text-xs">Date</p>
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{booking.hours} hours</p>
-                              <p className="text-xs">Duration</p>
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                              <p className="text-xs">Amount</p>
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                              <p className="text-xs">Location</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {hoursRemaining > 0 
-                                ? `Will auto-complete in ${hoursRemaining} hours if client doesn't respond`
-                                : "Will auto-complete soon"}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {hoursRemaining > 0 
+                              ? `Auto-complete in ${hoursRemaining}h`
+                              : "Auto-complete soon"}
+                          </span>
                         </div>
                         <Button
                           size="sm"
@@ -506,35 +504,33 @@ export default function CompanionDashboard() {
         {completedBookings && completedBookings.length > 0 && (
           <div className="mb-8">
             <h2 className="font-heading text-2xl font-semibold mb-4">Booking History</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {completedBookings.map((booking: any) => (
                 <Card key={booking.id} className="border-muted" data-testid={`completed-booking-${booking.id}`}>
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-heading text-lg font-semibold">
-                            {booking.clientName}
-                          </h3>
-                          <Badge variant="secondary" className="text-xs">Completed</Badge>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-heading text-lg font-semibold">
+                          {booking.clientName}
+                        </h3>
+                        <Badge variant="secondary" className="text-xs">Completed</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>
+                          <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
+                          <p className="text-xs">Date</p>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                          <div>
-                            <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                            <p className="text-xs">Date</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{booking.hours} hours</p>
-                            <p className="text-xs">Duration</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                            <p className="text-xs">Amount</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                            <p className="text-xs">Location</p>
-                          </div>
+                        <div>
+                          <p className="font-medium text-foreground">{booking.hours} hours</p>
+                          <p className="text-xs">Duration</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
+                          <p className="text-xs">Amount</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{booking.meetingLocation}</p>
+                          <p className="text-xs">Location</p>
                         </div>
                       </div>
                       <Button
