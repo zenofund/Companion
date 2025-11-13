@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 13, 2025 - Companion Dashboard Responsive Grid Layout**
+- Converted all booking card sections from vertical stacking to responsive grid layout
+- Changed from `space-y-4` to `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4` for all sections
+- Booking cards now display in rows: 1 column on mobile, 2 on tablet, 3 on desktop
+- Updated card internal layout from horizontal to vertical flex for better card proportions
+- Applied to all four sections: Pending Requests, Active Bookings, Pending Completion, and Booking History
+- Maintained all existing functionality while improving visual organization and space efficiency
+- Action buttons now full-width for better touch targets on mobile devices
+
 **October 27, 2025 - TypeScript Error Fixes & Client Dashboard Stability**
 - Fixed all 14 TypeScript errors in ClientDashboard component for type safety
 - Added proper type annotations to all useQuery hooks (user, bookings, stats, pendingCompletionBookings, existingRating)
