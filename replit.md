@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 13, 2025 - Mobile-First Booking Detail Layout**
+- Improved mobile readability by making booking details stack vertically on mobile devices
+- Changed booking detail grids from `grid-cols-2` to `grid-cols-1 sm:grid-cols-2` in all sections
+- Each booking detail (date, hours, amount, location) now appears on its own line on mobile
+- Details expand to 2 columns on small screens and above for better space usage
+- Applied consistently across all four booking sections for unified mobile experience
+
 **November 13, 2025 - Companion Dashboard Responsive Grid Layout**
 - Converted all booking card sections from vertical stacking to responsive grid layout
 - Changed from `space-y-4` to `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4` for all sections
