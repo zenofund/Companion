@@ -8,6 +8,7 @@ import {
   ratings,
   adminSettings,
   adminLogs,
+  userFavorites,
   type User, 
   type InsertUser,
   type Companion,
@@ -20,6 +21,8 @@ import {
   type InsertMessage,
   type Rating,
   type InsertRating,
+  type UserFavorite,
+  type InsertUserFavorite,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc, gte } from "drizzle-orm";
@@ -72,6 +75,20 @@ export interface IStorage {
   createRating(rating: InsertRating): Promise<Rating>;
   getRatingByBooking(bookingId: string): Promise<Rating | undefined>;
   updateRating(id: string, updates: Partial<Rating>): Promise<Rating>;
+
+  // Favorites
+  addFavorite(userId: string, companionId: string): Promise<UserFavorite>;
+  removeFavorite(userId: string, companionId: string): Promise<void>;
+  getUserFavorites(userId: string): Promise<string[]>;
+  isFavorite(userId: string, companionId: string): Promise<boolean>;
+
+  // Stats
+  getClientStats(clientId: string): Promise<{
+    activeBookings: number;
+    totalSpent: string;
+    favorites: number;
+    averageRating: string;
+  }>;
 
   // Admin
   getAdminSetting(key: string): Promise<string | undefined>;
@@ -461,6 +478,105 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(ratings)
       .where(eq(ratings.companionId, companionId));
+  }
+
+  // Favorites
+  async addFavorite(userId: string, companionId: string): Promise<UserFavorite> {
+    const [favorite] = await db
+      .insert(userFavorites)
+      .values({ userId, companionId })
+      .returning();
+    return favorite;
+  }
+
+  async removeFavorite(userId: string, companionId: string): Promise<void> {
+    await db
+      .delete(userFavorites)
+      .where(
+        and(
+          eq(userFavorites.userId, userId),
+          eq(userFavorites.companionId, companionId)
+        )
+      );
+  }
+
+  async getUserFavorites(userId: string): Promise<string[]> {
+    const favorites = await db
+      .select({ companionId: userFavorites.companionId })
+      .from(userFavorites)
+      .where(eq(userFavorites.userId, userId));
+    return favorites.map(f => f.companionId);
+  }
+
+  async isFavorite(userId: string, companionId: string): Promise<boolean> {
+    const [favorite] = await db
+      .select()
+      .from(userFavorites)
+      .where(
+        and(
+          eq(userFavorites.userId, userId),
+          eq(userFavorites.companionId, companionId)
+        )
+      );
+    return !!favorite;
+  }
+
+  // Stats
+  async getClientStats(clientId: string): Promise<{
+    activeBookings: number;
+    totalSpent: string;
+    favorites: number;
+    averageRating: string;
+  }> {
+    // Count active bookings
+    const activeBookingsResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.clientId, clientId),
+          sql`${bookings.status} IN ('active', 'pending_completion')`
+        )
+      );
+    const activeBookings = activeBookingsResult[0]?.count || 0;
+
+    // Calculate total spent from completed bookings
+    const totalSpentResult = await db
+      .select({ total: sql<string>`COALESCE(SUM(${bookings.totalAmount}), 0)::text` })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.clientId, clientId),
+          eq(bookings.status, "completed")
+        )
+      );
+    const totalSpent = totalSpentResult[0]?.total || "0.00";
+
+    // Count favorites
+    const favoritesResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userFavorites)
+      .where(eq(userFavorites.userId, clientId));
+    const favorites = favoritesResult[0]?.count || 0;
+
+    // Calculate average rating given by this client to companions
+    const avgRatingResult = await db
+      .select({ avg: sql<string>`COALESCE(TO_CHAR(ROUND(AVG(${ratings.clientRating}), 1), 'FM990.0'), '0.0')` })
+      .from(ratings)
+      .where(
+        and(
+          eq(ratings.clientId, clientId),
+          sql`${ratings.clientRating} IS NOT NULL`
+        )
+      );
+    const averageRating = avgRatingResult[0]?.avg || "0.0";
+
+    return {
+      activeBookings,
+      totalSpent,
+      favorites,
+      averageRating,
+    };
   }
 
   // Admin

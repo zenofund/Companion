@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, decimal, boolean, jsonb, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, decimal, boolean, jsonb, pgEnum, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -137,6 +137,16 @@ export const adminLogs = pgTable("admin_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// User Favorites table
+export const userFavorites = pgTable("user_favorites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  companionId: varchar("companion_id").notNull().references(() => companions.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserCompanion: unique().on(table.userId, table.companionId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   companionProfile: many(companions),
@@ -144,6 +154,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   messagesSent: many(messages),
   ratingsGiven: many(ratings),
   adminLogs: many(adminLogs),
+  favorites: many(userFavorites),
 }));
 
 export const companionsRelations = relations(companions, ({ one, many }) => ({
@@ -153,6 +164,7 @@ export const companionsRelations = relations(companions, ({ one, many }) => ({
   }),
   bookings: many(bookings),
   ratings: many(ratings),
+  favoritedBy: many(userFavorites),
 }));
 
 export const bookingsRelations = relations(bookings, ({ one, many }) => ({
@@ -202,6 +214,17 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   }),
 }));
 
+export const userFavoritesRelations = relations(userFavorites, ({ one }) => ({
+  user: one(users, {
+    fields: [userFavorites.userId],
+    references: [users.id],
+  }),
+  companion: one(companions, {
+    fields: [userFavorites.companionId],
+    references: [companions.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -244,6 +267,11 @@ export const insertRatingSchema = createInsertSchema(ratings).omit({
   createdAt: true,
 });
 
+export const insertUserFavoriteSchema = createInsertSchema(userFavorites).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -262,6 +290,9 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type Rating = typeof ratings.$inferSelect;
 export type InsertRating = z.infer<typeof insertRatingSchema>;
+
+export type UserFavorite = typeof userFavorites.$inferSelect;
+export type InsertUserFavorite = z.infer<typeof insertUserFavoriteSchema>;
 
 export type AdminSettings = typeof adminSettings.$inferSelect;
 export type AdminLog = typeof adminLogs.$inferSelect;

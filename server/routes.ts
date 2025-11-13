@@ -1400,12 +1400,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      return res.json({
-        activeBookings: 0,
-        totalSpent: "0.00",
-        favorites: 0,
-        averageRating: "0.0",
-      });
+      const stats = await storage.getClientStats(req.session.user.id);
+      return res.json(stats);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }
@@ -1432,6 +1428,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getCompanionStats(companion.id);
 
       return res.json(stats);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ========== FAVORITES ROUTES ==========
+
+  // GET routes must come before parameterized routes to avoid conflicts
+  app.get("/api/favorites/:companionId", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Only clients can check favorites" });
+    }
+
+    try {
+      const companionId = req.params.companionId;
+      const isFavorite = await storage.isFavorite(req.session.user.id, companionId);
+      return res.json({ isFavorite });
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/favorites", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Only clients can view favorites" });
+    }
+
+    try {
+      const favoriteIds = await storage.getUserFavorites(req.session.user.id);
+      return res.json(favoriteIds);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/favorites/:companionId", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Only clients can favorite companions" });
+    }
+
+    try {
+      const companionId = req.params.companionId;
+      
+      // Check if companion exists
+      const companion = await storage.getCompanion(companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      const favorite = await storage.addFavorite(req.session.user.id, companionId);
+      return res.json(favorite);
+    } catch (error: any) {
+      // Handle duplicate favorite (unique constraint violation)
+      if (error.code === "23505") {
+        return res.status(409).json({ message: "Already favorited" });
+      }
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/favorites/:companionId", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Only clients can unfavorite companions" });
+    }
+
+    try {
+      const companionId = req.params.companionId;
+      await storage.removeFavorite(req.session.user.id, companionId);
+      return res.json({ success: true });
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

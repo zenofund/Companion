@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { BookingModal } from "@/components/booking/BookingModal";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateAge } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, 
   Calendar, 
@@ -58,12 +60,89 @@ export default function CompanionProfile() {
   const [, setLocation] = useLocation();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const { toast } = useToast();
 
   const { data: user, isLoading: userLoading } = useQuery<User>({ queryKey: ["/api/auth/me"] });
   const { data: companion, isLoading} = useQuery<Companion>({
     queryKey: ["/api/companions", params?.id],
     enabled: !!params?.id,
   });
+
+  const isClient = user?.role === "client";
+  const companionId = params?.id;
+
+  // Check if companion is favorited
+  const { data: favoriteData } = useQuery<{ isFavorite: boolean }>({
+    queryKey: ["/api/favorites", companionId],
+    enabled: isClient && !!companionId,
+  });
+  const isFavorited = favoriteData?.isFavorite || false;
+
+  // Add favorite mutation
+  const addFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/favorites/${companionId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites", companionId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/client"] });
+      toast({
+        title: "Added to favorites",
+        description: "Companion added to your favorites list",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add favorite",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove favorite mutation
+  const removeFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("DELETE", `/api/favorites/${companionId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites", companionId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/client"] });
+      toast({
+        title: "Removed from favorites",
+        description: "Companion removed from your favorites list",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove favorite",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFavoriteClick = () => {
+    if (!user) {
+      setLocation("/login");
+      return;
+    }
+
+    if (!isClient) {
+      toast({
+        title: "Not available",
+        description: "Only clients can favorite companions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isFavorited) {
+      removeFavoriteMutation.mutate();
+    } else {
+      addFavoriteMutation.mutate();
+    }
+  };
 
   const handleBookNowClick = () => {
     // Don't proceed if still loading auth state
@@ -142,6 +221,26 @@ export default function CompanionProfile() {
                         {companion.name || "Anonymous"}
                       </h1>
                       <CheckCircle className="h-7 w-7 text-primary" />
+                      
+                      {/* Favorite Button - Only show for clients */}
+                      {isClient && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={handleFavoriteClick}
+                          disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
+                          data-testid="button-favorite"
+                          className="ml-2"
+                        >
+                          <Heart 
+                            className={`h-6 w-6 ${
+                              isFavorited 
+                                ? "fill-red-500 text-red-500" 
+                                : "text-muted-foreground"
+                            }`} 
+                          />
+                        </Button>
+                      )}
                     </div>
 
                     {/* Quick Stats */}
