@@ -564,6 +564,37 @@ export class DatabaseStorage implements IStorage {
     return favorites.map(f => f.companionId);
   }
 
+  async getUserFavoriteCompanions(userId: string): Promise<any[]> {
+    const favorites = await db
+      .select({
+        id: companions.id,
+        userId: companions.userId,
+        name: users.name,
+        avatar: users.avatar,
+        hourlyRate: companions.hourlyRate,
+        bio: companions.bio,
+        gallery: companions.gallery,
+        city: companions.city,
+        latitude: companions.latitude,
+        longitude: companions.longitude,
+        isAvailable: companions.isAvailable,
+        languages: companions.languages,
+        services: companions.services,
+        interests: companions.interests,
+        moderationStatus: companions.moderationStatus,
+        averageRating: companions.averageRating,
+        totalBookings: companions.totalBookings,
+        favoritedAt: userFavorites.createdAt,
+      })
+      .from(userFavorites)
+      .innerJoin(companions, eq(userFavorites.companionId, companions.id))
+      .innerJoin(users, eq(companions.userId, users.id))
+      .where(eq(userFavorites.userId, userId))
+      .orderBy(desc(userFavorites.createdAt));
+    
+    return favorites;
+  }
+
   async isFavorite(userId: string, companionId: string): Promise<boolean> {
     const [favorite] = await db
       .select()
