@@ -80,8 +80,8 @@ export function DashboardLayout({
         </Sidebar>
 
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between gap-4 p-4 border-b bg-background">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
+          <header className="flex items-center justify-between gap-4 p-4 border-b bg-background sticky top-0 z-40">
+            <SidebarTrigger data-testid="button-sidebar-toggle" className="md:block" />
             <div className="flex-1" />
             <Header user={user} notificationCount={notificationCount} />
           </header>
