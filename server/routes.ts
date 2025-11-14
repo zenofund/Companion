@@ -1554,6 +1554,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========== FAVORITES ROUTES ==========
 
   // GET routes must come before parameterized routes to avoid conflicts
+  app.get("/api/favorites/companions", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "client") {
+      return res.status(403).json({ message: "Only clients can view favorites" });
+    }
+
+    try {
+      const favoriteCompanions = await storage.getUserFavoriteCompanions(req.session.user.id);
+      return res.json(favoriteCompanions);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/favorites/:companionId", async (req, res) => {
     if (!req.session.user || req.session.user.role !== "client") {
       return res.status(403).json({ message: "Only clients can check favorites" });
