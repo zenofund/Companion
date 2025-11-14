@@ -202,26 +202,26 @@ export default function CompanionProfile() {
           {/* Profile Card Overlay */}
           <div className="relative h-full flex items-center justify-center">
             <Card className="max-w-4xl w-full mx-4 overflow-visible">
-              <CardContent className="p-8">
-                <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
+                <div className="flex flex-col md:flex-row gap-4 sm:gap-6 lg:gap-8 items-center md:items-start">
                   {/* Avatar */}
-                  <Avatar className="h-40 w-40 border-4 border-background shadow-lg">
+                  <Avatar className="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 border-4 border-background shadow-lg">
                     <AvatarImage src={companion.avatar} alt={companion.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-4xl">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl sm:text-3xl lg:text-4xl">
                       {companion.name?.charAt(0).toUpperCase() || <User />}
                     </AvatarFallback>
                   </Avatar>
 
                   {/* Info */}
                   <div className="flex-1 text-center md:text-left">
-                    <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+                    <div className="flex items-center gap-2 justify-center md:justify-start mb-2 flex-wrap">
                       <h1 
-                        className="font-heading text-4xl font-bold"
+                        className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight"
                         data-testid="text-companion-name"
                       >
                         {companion.name || "Anonymous"}
                       </h1>
-                      <CheckCircle className="h-7 w-7 text-primary" />
+                      <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-primary" />
                       
                       {/* Favorite Button - Only show for clients */}
                       {isClient && (
@@ -234,7 +234,7 @@ export default function CompanionProfile() {
                           className="ml-2"
                         >
                           <Heart 
-                            className={`h-6 w-6 ${
+                            className={`h-5 w-5 sm:h-6 sm:w-6 ${
                               isFavorited 
                                 ? "fill-red-500 text-red-500" 
                                 : "text-muted-foreground"
@@ -245,14 +245,14 @@ export default function CompanionProfile() {
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
                       <div className="text-center md:text-left">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                          <Banknote className="h-4 w-4" />
-                          <span className="text-sm">Rate</span>
+                        <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground mb-1 justify-center md:justify-start">
+                          <Banknote className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">Rate</span>
                         </div>
                         <p 
-                          className="font-heading text-2xl font-semibold"
+                          className="font-heading text-base sm:text-lg lg:text-xl font-semibold"
                           data-testid="text-hourly-rate"
                         >
                           ₦{companion.hourlyRate}/hr
@@ -260,33 +260,33 @@ export default function CompanionProfile() {
                       </div>
 
                       <div className="text-center md:text-left">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                          <MapPin className="h-4 w-4" />
-                          <span className="text-sm">City</span>
+                        <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground mb-1 justify-center md:justify-start">
+                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">City</span>
                         </div>
-                        <p className="font-heading text-2xl font-semibold" data-testid="text-city">
+                        <p className="font-heading text-base sm:text-lg lg:text-xl font-semibold" data-testid="text-city">
                           {companion.city || "N/A"}
                         </p>
                       </div>
 
                       {age && (
                         <div className="text-center md:text-left">
-                          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                            <Calendar className="h-4 w-4" />
-                            <span className="text-sm">Age</span>
+                          <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground mb-1 justify-center md:justify-start">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="text-xs sm:text-sm">Age</span>
                           </div>
-                          <p className="font-heading text-2xl font-semibold" data-testid="text-age">
+                          <p className="font-heading text-base sm:text-lg lg:text-xl font-semibold" data-testid="text-age">
                             {age} yrs
                           </p>
                         </div>
                       )}
 
                       <div className="text-center md:text-left">
-                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                          <Star className="h-4 w-4" />
-                          <span className="text-sm">Rating</span>
+                        <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground mb-1 justify-center md:justify-start">
+                          <Star className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">Rating</span>
                         </div>
-                        <p className="font-heading text-2xl font-semibold" data-testid="text-rating">
+                        <p className="font-heading text-base sm:text-lg lg:text-xl font-semibold" data-testid="text-rating">
                           {companion.averageRating || "5.0"}
                         </p>
                       </div>
@@ -299,30 +299,33 @@ export default function CompanionProfile() {
         </section>
 
         {/* Content Sections */}
-        <section className="container mx-auto px-4 py-12 max-w-4xl">
+        <section className="container mx-auto px-4 py-8 sm:py-12 max-w-4xl">
           <Tabs defaultValue="about" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="about" data-testid="tab-about">
-                <Briefcase className="h-4 w-4 mr-2" />
-                About
+              <TabsTrigger value="about" data-testid="tab-about" className="text-xs sm:text-sm">
+                <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">About</span>
+                <span className="sm:hidden">About</span>
               </TabsTrigger>
-              <TabsTrigger value="gallery" data-testid="tab-gallery">
-                <Heart className="h-4 w-4 mr-2" />
-                Gallery
+              <TabsTrigger value="gallery" data-testid="tab-gallery" className="text-xs sm:text-sm">
+                <Heart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Gallery</span>
+                <span className="sm:hidden">Gallery</span>
               </TabsTrigger>
-              <TabsTrigger value="reviews" data-testid="tab-reviews">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Reviews
+              <TabsTrigger value="reviews" data-testid="tab-reviews" className="text-xs sm:text-sm">
+                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Reviews</span>
+                <span className="sm:hidden">Reviews</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="about" className="space-y-6 mt-6">
-              {/* Services */}
+            <TabsContent value="about" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+              {/* About Bio */}
               {companion.bio && (
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="font-heading text-xl font-semibold mb-4">About</h3>
-                    <p className="text-muted-foreground leading-relaxed" data-testid="text-bio">
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <h3 className="font-heading text-lg sm:text-xl font-semibold mb-3 sm:mb-4">About</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed" data-testid="text-bio">
                       {companion.bio}
                     </p>
                   </CardContent>
@@ -332,14 +335,14 @@ export default function CompanionProfile() {
               {/* Services */}
               {companion.services && companion.services.length > 0 && (
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="font-heading text-xl font-semibold mb-4">Services</h3>
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <h3 className="font-heading text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Services</h3>
                     <div className="flex flex-wrap gap-2">
                       {companion.services.map((service, index) => (
                         <Badge 
                           key={index} 
                           variant="secondary"
-                          className="text-sm px-3 py-1"
+                          className="text-xs sm:text-sm px-2 sm:px-3 py-1"
                           data-testid={`badge-service-${index}`}
                         >
                           {service}
@@ -353,9 +356,9 @@ export default function CompanionProfile() {
               {/* Languages */}
               {companion.languages && companion.languages.length > 0 && (
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="font-heading text-xl font-semibold mb-4 flex items-center gap-2">
-                      <Globe className="h-5 w-5" />
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <h3 className="font-heading text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                      <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
                       Languages
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -363,6 +366,7 @@ export default function CompanionProfile() {
                         <Badge 
                           key={index}
                           variant="outline"
+                          className="text-xs sm:text-sm"
                           data-testid={`badge-language-${index}`}
                         >
                           {language}
@@ -376,9 +380,9 @@ export default function CompanionProfile() {
               {/* Interests */}
               {companion.interests && companion.interests.length > 0 && (
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="font-heading text-xl font-semibold mb-4 flex items-center gap-2">
-                      <Heart className="h-5 w-5" />
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <h3 className="font-heading text-lg sm:text-xl font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                      <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
                       Interests
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -386,6 +390,7 @@ export default function CompanionProfile() {
                         <Badge 
                           key={index}
                           variant="outline"
+                          className="text-xs sm:text-sm"
                           data-testid={`badge-interest-${index}`}
                         >
                           {interest}
@@ -397,12 +402,12 @@ export default function CompanionProfile() {
               )}
             </TabsContent>
 
-            <TabsContent value="gallery" className="mt-6">
-              <div className="flex overflow-x-auto gap-4 snap-x snap-mandatory scrollbar-hide md:grid md:grid-cols-3 md:overflow-x-visible">
+            <TabsContent value="gallery" className="mt-4 sm:mt-6">
+              <div className="flex overflow-x-auto gap-3 sm:gap-4 snap-x snap-mandatory scrollbar-hide md:grid md:grid-cols-3 md:overflow-x-visible">
                 {companion.gallery?.map((image, index) => (
                   <div
                     key={index}
-                    className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover-elevate group flex-shrink-0 w-full snap-center md:w-auto"
+                    className="relative aspect-square rounded-md sm:rounded-lg overflow-hidden cursor-pointer hover-elevate group flex-shrink-0 w-full snap-center md:w-auto"
                     onClick={() => setLightboxIndex(index)}
                     data-testid={`image-gallery-${index}`}
                   >
@@ -416,7 +421,7 @@ export default function CompanionProfile() {
               </div>
             </TabsContent>
 
-            <TabsContent value="reviews" className="mt-6">
+            <TabsContent value="reviews" className="mt-4 sm:mt-6">
               <ReviewsList companionId={params?.id || ""} />
             </TabsContent>
           </Tabs>
@@ -561,10 +566,10 @@ function ReviewsList({ companionId }: { companionId: string }) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {[1, 2, 3].map((i) => (
           <Card key={i}>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-5 lg:p-6">
               <div className="animate-pulse space-y-3">
                 <div className="h-4 bg-muted rounded w-1/4"></div>
                 <div className="h-4 bg-muted rounded w-full"></div>
@@ -580,8 +585,8 @@ function ReviewsList({ companionId }: { companionId: string }) {
   if (!reviews || reviews.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground text-center py-8" data-testid="text-no-reviews">
+        <CardContent className="p-4 sm:p-5 lg:p-6">
+          <p className="text-sm sm:text-base text-muted-foreground text-center py-6 sm:py-8" data-testid="text-no-reviews">
             No reviews yet
           </p>
         </CardContent>
@@ -590,17 +595,17 @@ function ReviewsList({ companionId }: { companionId: string }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {reviews.map((review, index) => (
         <Card key={index} data-testid={`review-${index}`}>
-          <CardContent className="p-6 space-y-3">
+          <CardContent className="p-4 sm:p-5 lg:p-6 space-y-2 sm:space-y-3">
             {/* Header: Rating and Date */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-4 w-4 ${
+                    className={`h-3 w-3 sm:h-4 sm:w-4 ${
                       star <= review.rating
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-gray-300"
@@ -609,23 +614,23 @@ function ReviewsList({ companionId }: { companionId: string }) {
                   />
                 ))}
               </div>
-              <span className="text-sm text-muted-foreground" data-testid="text-review-date">
+              <span className="text-xs sm:text-sm text-muted-foreground" data-testid="text-review-date">
                 {formatReviewDate(review.createdAt)}
               </span>
             </div>
 
             {/* Review Text */}
-            <p className="text-foreground" data-testid="text-review-content">
+            <p className="text-sm sm:text-base text-foreground leading-relaxed" data-testid="text-review-content">
               {review.review}
             </p>
 
             {/* Reviewer Name and Badge */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" data-testid="text-reviewer-name">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs sm:text-sm font-medium" data-testid="text-reviewer-name">
                 {review.reviewerName}
               </span>
               {review.verified && (
-                <Badge variant="secondary" className="text-xs" data-testid="badge-verified">
+                <Badge variant="secondary" className="text-[10px] sm:text-xs" data-testid="badge-verified">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Verified
                 </Badge>
