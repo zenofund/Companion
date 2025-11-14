@@ -28,9 +28,14 @@ class MessageBroadcaster {
     this.clients.get(bookingId)!.push(client);
     console.log(`[SSE] Client registered for booking ${bookingId}, user ${userId}. Total clients: ${this.clients.get(bookingId)!.length}`);
 
-    // Remove client when connection closes
-    response.on('close', () => {
-      this.unregisterClient(bookingId, userId, response);
+    // Remove client when connection ends (handle all termination events)
+    const cleanup = () => this.unregisterClient(bookingId, userId, response);
+    
+    response.on('close', cleanup);
+    response.on('finish', cleanup);
+    response.on('error', (error) => {
+      console.error(`[SSE] Connection error for booking ${bookingId}, user ${userId}:`, error);
+      cleanup();
     });
   }
 
