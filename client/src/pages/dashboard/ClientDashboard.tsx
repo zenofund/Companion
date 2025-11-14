@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Header } from "@/components/layout/Header";
+import { useUser } from "@/hooks/useUser";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { clientNavItems } from "@/config/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import { RatingModal } from "@/components/booking/RatingModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function ClientDashboard() {
+  const [selectedSection, setSelectedSection] = useState("browse");
   const [browseViewMode, setBrowseViewMode] = useState<"list" | "map">("list");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,7 +40,21 @@ export default function ClientDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: user, isLoading: userLoading } = useUser();
+
+  // Redirect non-clients
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "client") {
+    setLocation("/");
+    return null;
+  }
   const { data: bookings } = useQuery<any[]>({ queryKey: ["/api/bookings/client"] });
   const { data: pendingCompletionBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/client/pending-completion"] });
   const { data: stats } = useQuery<any>({ queryKey: ["/api/stats/client"] });
@@ -220,21 +236,24 @@ export default function ClientDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
-      
-      <main className="pt-28 container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl font-bold mb-2" data-testid="text-welcome">
-            Welcome back, {user?.name}!
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your bookings and explore new companions
-          </p>
-        </div>
+    <>
+      <DashboardLayout
+        user={user}
+        navItems={clientNavItems}
+        selectedSection={selectedSection}
+        onSectionChange={setSelectedSection}
+      >
+      {/* Welcome Section */}
+      <div className="mb-8">
+        <h1 className="font-heading text-3xl font-bold mb-2" data-testid="text-welcome">
+          Welcome back, {user?.name}!
+        </h1>
+        <p className="text-muted-foreground">
+          Manage your bookings and explore new companions
+        </p>
+      </div>
 
-        {/* Stats Cards */}
+      {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -292,25 +311,10 @@ export default function ClientDashboard() {
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="browse" className="w-full">
-          <TabsList>
-            <TabsTrigger value="browse" data-testid="tab-browse">
-              Browse Companions
-            </TabsTrigger>
-            <TabsTrigger value="bookings" data-testid="tab-bookings">
-              My Bookings
-            </TabsTrigger>
-            <TabsTrigger value="messages" data-testid="tab-messages">
-              Messages
-            </TabsTrigger>
-            <TabsTrigger value="favorites" data-testid="tab-favorites">
-              Favorites
-            </TabsTrigger>
-          </TabsList>
+        {/* Main Content - Conditional Section Rendering */}
 
           {/* Browse Companions Tab */}
-          <TabsContent value="browse" className="mt-6">
+          selectedSection === "browse" && (
             <Card>
               <CardContent className="p-6">
                 {/* Search and View Toggle */}
@@ -386,9 +390,9 @@ export default function ClientDashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )
 
-          <TabsContent value="bookings" className="mt-6">
+          selectedSection === "bookings" && (
             {/* Pending Payment Bookings */}
             {pendingPaymentBookings && pendingPaymentBookings.length > 0 && (
               <div className="mb-8">
@@ -667,9 +671,9 @@ export default function ClientDashboard() {
                 </div>
               </div>
             )}
-          </TabsContent>
+          )
 
-          <TabsContent value="messages" className="mt-6">
+          selectedSection === "messages" && (
             <Card>
               <CardContent className="p-12 text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -678,9 +682,9 @@ export default function ClientDashboard() {
                 </p>
               </CardContent>
             </Card>
-          </TabsContent>
+          )
 
-          <TabsContent value="favorites" className="mt-6">
+          selectedSection === "favorites" && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -689,9 +693,8 @@ export default function ClientDashboard() {
                 </p>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
+          )
+      </DashboardLayout>
 
       {/* Rating Modal */}
       {selectedBooking && (
@@ -759,6 +762,6 @@ export default function ClientDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Header } from "@/components/layout/Header";
+import { useLocation } from "wouter";
+import { useUser } from "@/hooks/useUser";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { adminNavItems } from "@/config/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -91,6 +93,8 @@ interface DisputedBooking {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [selectedSection, setSelectedSection] = useState("moderation");
   const [rejectReason, setRejectReason] = useState("");
   const [rejectingCompanionId, setRejectingCompanionId] = useState<string | null>(null);
   const [platformFeeInput, setPlatformFeeInput] = useState("");
@@ -98,7 +102,14 @@ export default function AdminDashboard() {
   const [resolutionType, setResolutionType] = useState<"complete" | "revoke" | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState("");
 
-  const { data: user, isLoading: userLoading } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: user, isLoading: userLoading } = useUser();
+
+  // Redirect non-admins using effect to avoid render-time side effects
+  useEffect(() => {
+    if (!userLoading && (!user || user.role !== "admin")) {
+      setLocation("/");
+    }
+  }, [user, userLoading, setLocation]);
   const { data: stats, isLoading: statsLoading } = useQuery<PlatformStats>({ 
     queryKey: ["/api/admin/stats"],
     enabled: user?.role === "admin",
@@ -281,45 +292,37 @@ export default function AdminDashboard() {
     });
   };
 
-  // Show loading state while checking authentication
+  // Loading state
   if (userLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header user={user} />
-        <main className="pt-28 container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-[60vh]">
-            <div className="text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
-  if (user?.role !== "admin") {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header user={user} />
-        <main className="pt-28 container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="p-12 text-center">
-              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
-              <p className="text-lg font-semibold">Access Denied</p>
-              <p className="text-muted-foreground">You do not have permission to access this page</p>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
+  // Unauthorized - redirect will happen in effect
+  if (!user || user.role !== "admin") {
+    return null;
   }
+
+  const navItemsWithBadges = useMemo(() => 
+    adminNavItems.map(item => ({
+      ...item,
+      badge: item.value === "moderation" ? pendingCompanions?.length : 
+             item.value === "bookings" ? disputedBookings?.length : undefined,
+    })),
+    [pendingCompanions, disputedBookings]
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
-      
-      <main className="pt-16 container mx-auto px-4 py-8">
+    <>
+      <DashboardLayout
+        user={user}
+        navItems={navItemsWithBadges}
+        selectedSection={selectedSection}
+        onSectionChange={setSelectedSection}
+      >
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold mb-2" data-testid="text-admin-title">
             Admin Dashboard
@@ -329,7 +332,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - always shown */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">

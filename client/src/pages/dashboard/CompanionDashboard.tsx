@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Header } from "@/components/layout/Header";
+import { useUser } from "@/hooks/useUser";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { companionNavItems } from "@/config/dashboard-nav";
 import { EditProfileSheet } from "@/components/companion/EditProfileSheet";
 import { RatingModal } from "@/components/booking/RatingModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,12 +49,35 @@ interface PendingBooking {
 export default function CompanionDashboard() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [selectedSection, setSelectedSection] = useState("overview");
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [ratingModalOpen, setRatingModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   
-  const { data: user } = useQuery<any>({ queryKey: ["/api/auth/me"] });
+  const { data: user, isLoading: userLoading } = useUser();
+
+  // Redirect non-companions using effect to avoid render-time side effects
+  useEffect(() => {
+    if (!userLoading && (!user || user.role !== "companion")) {
+      setLocation("/");
+    }
+  }, [user, userLoading, setLocation]);
+
   const { data: profile} = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
+
+  // Loading state
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Unauthorized - redirect will happen in effect
+  if (!user || user.role !== "companion") {
+    return null;
+  }
   const { data: pendingRequests } = useQuery<PendingBooking[]>({ queryKey: ["/api/bookings/pending"] });
   const { data: activeBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/active"] });
   const { data: completedBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/completed"] });
@@ -141,12 +166,26 @@ export default function CompanionDashboard() {
     return Math.round((completed / totalFields) * 100);
   }, [profile]);
 
+  const navItemsWithBadges = useMemo(() => 
+    companionNavItems.map(item => ({
+      ...item,
+      badge: item.value === "requests" ? pendingRequests?.length : undefined,
+    })),
+    [pendingRequests]
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} onProfileClick={() => setIsProfileModalOpen(true)} />
-      
-      <main className="pt-28 container mx-auto px-4 py-8">
-        {/* Header with Availability Toggle */}
+    <>
+      <DashboardLayout
+        user={user}
+        navItems={navItemsWithBadges}
+        selectedSection={selectedSection}
+        onSectionChange={setSelectedSection}
+      >
+        {/* Overview Section */}
+        {selectedSection === "overview" && (
+          <>
+            {/* Header with Availability Toggle */}
         <div className="space-y-4 mb-8">
           <h1 className="font-heading text-3xl font-bold" data-testid="text-welcome">
             Welcome back, {user?.name}!
@@ -269,9 +308,12 @@ export default function CompanionDashboard() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
 
-        {/* Pending Requests */}
-        <div className="mb-8">
+        {/* Requests Section */}
+        {selectedSection === "requests" && (
+          <div className="mb-8">
           <h2 className="font-heading text-2xl font-semibold mb-4">Pending Requests</h2>
           {pendingRequests && pendingRequests.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -348,10 +390,12 @@ export default function CompanionDashboard() {
               </CardContent>
             </Card>
           )}
-        </div>
+          </div>
+        )}
 
-        {/* Active Bookings */}
-        <div className="mb-8">
+        {/* Active Section */}
+        {selectedSection === "active" && (
+          <div className="mb-8">
           <h2 className="font-heading text-2xl font-semibold mb-4">Active Bookings</h2>
           {reallyActiveBookings && reallyActiveBookings.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -428,10 +472,14 @@ export default function CompanionDashboard() {
               </CardContent>
             </Card>
           )}
-        </div>
+          </div>
+        )}
 
-        {/* Pending Completion Bookings */}
-        {pendingCompletionBookings && pendingCompletionBookings.length > 0 && (
+        {/* History Section */}
+        {selectedSection === "history" && (
+          <>
+            {/* Pending Completion Bookings */}
+            {pendingCompletionBookings && pendingCompletionBookings.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
@@ -552,7 +600,9 @@ export default function CompanionDashboard() {
             </div>
           </div>
         )}
-      </main>
+          </>
+        )}
+      </DashboardLayout>
 
       {/* Profile Sheet */}
       <EditProfileSheet
@@ -569,15 +619,15 @@ export default function CompanionDashboard() {
           clientName={selectedBooking.clientName}
           userRole="companion"
           existingRating={
-            existingRating?.companionRating
+            existingRating && "companionRating" in existingRating && existingRating.companionRating
               ? {
                   rating: existingRating.companionRating,
-                  review: existingRating.companionReview,
+                  review: "companionReview" in existingRating ? existingRating.companionReview : undefined,
                 }
               : null
           }
         />
       )}
-    </div>
+    </>
   );
 }

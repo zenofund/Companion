@@ -1,13 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { useUser } from "@/hooks/useUser";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { Heart, MapPin } from "lucide-react";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function Favorites() {
+  const { data: user, isLoading: userLoading } = useUser();
+  const [, setLocation] = useLocation();
+
   const { data: favoriteCompanions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/favorites/companions"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!user && user.role === "client",
   });
+
+  // Redirect non-clients
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "client") {
+    setLocation("/");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
