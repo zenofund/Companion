@@ -42,6 +42,26 @@ export default function ClientDashboard() {
 
   const { data: user, isLoading: userLoading } = useUser();
 
+  // Fetch data with enabled guards
+  const { data: bookings } = useQuery<any[]>({ 
+    queryKey: ["/api/bookings/client"],
+    enabled: user?.role === "client",
+  });
+  const { data: pendingCompletionBookings } = useQuery<any[]>({ 
+    queryKey: ["/api/bookings/client/pending-completion"],
+    enabled: user?.role === "client",
+  });
+  const { data: stats } = useQuery<any>({ 
+    queryKey: ["/api/stats/client"],
+    enabled: user?.role === "client",
+  });
+  
+  // Fetch rating for selected booking when modal opens
+  const { data: existingRating } = useQuery<any>({
+    queryKey: ["/api/ratings", selectedBooking?.id],
+    enabled: !!selectedBooking && ratingModalOpen,
+  });
+
   // Redirect non-clients
   if (userLoading) {
     return (
@@ -55,15 +75,6 @@ export default function ClientDashboard() {
     setLocation("/");
     return null;
   }
-  const { data: bookings } = useQuery<any[]>({ queryKey: ["/api/bookings/client"] });
-  const { data: pendingCompletionBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/client/pending-completion"] });
-  const { data: stats } = useQuery<any>({ queryKey: ["/api/stats/client"] });
-  
-  // Fetch rating for selected booking when modal opens
-  const { data: existingRating } = useQuery<any>({
-    queryKey: ["/api/ratings", selectedBooking?.id],
-    enabled: !!selectedBooking && ratingModalOpen,
-  });
 
   const pendingPaymentBookings = bookings?.filter((b: any) => b.status === "accepted") || [];
   const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];

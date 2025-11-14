@@ -56,6 +56,34 @@ export default function CompanionDashboard() {
   
   const { data: user, isLoading: userLoading } = useUser();
 
+  // Fetch data with enabled guards
+  const { data: profile} = useQuery<Companion | null>({ 
+    queryKey: ["/api/companion/profile"],
+    enabled: user?.role === "companion",
+  });
+  const { data: pendingRequests } = useQuery<PendingBooking[]>({ 
+    queryKey: ["/api/bookings/pending"],
+    enabled: user?.role === "companion",
+  });
+  const { data: activeBookings } = useQuery<any[]>({ 
+    queryKey: ["/api/bookings/companion/active"],
+    enabled: user?.role === "companion",
+  });
+  const { data: completedBookings } = useQuery<any[]>({ 
+    queryKey: ["/api/bookings/companion/completed"],
+    enabled: user?.role === "companion",
+  });
+  const { data: stats } = useQuery<CompanionStats>({ 
+    queryKey: ["/api/stats/companion"],
+    enabled: user?.role === "companion",
+  });
+  
+  // Fetch rating for selected booking when modal opens
+  const { data: existingRating } = useQuery({
+    queryKey: ["/api/ratings", selectedBooking?.id],
+    enabled: !!selectedBooking && ratingModalOpen,
+  });
+
   // Redirect non-companions using effect to avoid render-time side effects
   useEffect(() => {
     if (!userLoading && (!user || user.role !== "companion")) {
@@ -63,7 +91,9 @@ export default function CompanionDashboard() {
     }
   }, [user, userLoading, setLocation]);
 
-  const { data: profile} = useQuery<Companion | null>({ queryKey: ["/api/companion/profile"] });
+  // Separate active bookings into truly active and pending completion
+  const reallyActiveBookings = activeBookings?.filter((b: any) => b.status === "accepted" || b.status === "active") || [];
+  const pendingCompletionBookings = activeBookings?.filter((b: any) => b.status === "pending_completion") || [];
 
   // Loading state
   if (userLoading) {
@@ -78,20 +108,6 @@ export default function CompanionDashboard() {
   if (!user || user.role !== "companion") {
     return null;
   }
-  const { data: pendingRequests } = useQuery<PendingBooking[]>({ queryKey: ["/api/bookings/pending"] });
-  const { data: activeBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/active"] });
-  const { data: completedBookings } = useQuery<any[]>({ queryKey: ["/api/bookings/companion/completed"] });
-  const { data: stats } = useQuery<CompanionStats>({ queryKey: ["/api/stats/companion"] });
-  
-  // Separate active bookings into truly active and pending completion
-  const reallyActiveBookings = activeBookings?.filter((b: any) => b.status === "accepted" || b.status === "active") || [];
-  const pendingCompletionBookings = activeBookings?.filter((b: any) => b.status === "pending_completion") || [];
-  
-  // Fetch rating for selected booking when modal opens
-  const { data: existingRating } = useQuery({
-    queryKey: ["/api/ratings", selectedBooking?.id],
-    enabled: !!selectedBooking && ratingModalOpen,
-  });
 
   const toggleAvailabilityMutation = useMutation({
     mutationFn: async (isAvailable: boolean) => {
