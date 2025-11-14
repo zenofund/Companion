@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
+import { messageBroadcaster } from "./message-broadcaster";
 import { moderateText, moderateImage } from "./openai-moderation";
 import { 
   initializePayment, 
@@ -1380,6 +1381,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await storage.getBookingMessages(req.params.bookingId);
       return res.json(messages);
     } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  // SSE stream endpoint for real-time messages
+  app.get("/api/bookings/:bookingId/messages/stream", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const { bookingId } = req.params;
+    const userId = req.session.user.id;
+
+    try {
+      // Verify booking exists and user is authorized
+      const booking = await storage.getBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      const companion = await storage.getCompanion(booking.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      const isClient = booking.clientId === userId;
+      const isCompanion = companion.userId === userId;
+
+      if (!isClient && !isCompanion) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      // Set SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+      // Send initial connection event
+      res.write(`data: ${JSON.stringify({ type: 'connected', bookingId })}\n\n`);
+
+      // Register this client with the broadcaster
+      messageBroadcaster.registerClient(bookingId, userId, res);
+
+      console.log(`[SSE] Client connected for booking ${bookingId}, user ${userId}`);
+    } catch (error: any) {
+      console.error('[SSE] Stream setup error:', error);
+      if (!res.headersSent) {
+        return res.status(500).json({ message: error.message });
+      }
+    }
+  });
+
+  // POST endpoint for sending messages (replaces WebSocket send)
+  app.post("/api/bookings/:bookingId/messages", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const { bookingId } = req.params;
+    const userId = req.session.user.id;
+
+    try {
+      // Validate request body
+      const messageSchema = z.object({
+        content: z.string().min(1).max(2000),
+      });
+
+      const { content } = messageSchema.parse(req.body);
+
+      // Verify booking exists and user is authorized
+      const booking = await storage.getBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      const companion = await storage.getCompanion(booking.companionId);
+      if (!companion) {
+        return res.status(404).json({ message: "Companion not found" });
+      }
+
+      const isClient = booking.clientId === userId;
+      const isCompanion = companion.userId === userId;
+
+      if (!isClient && !isCompanion) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      // Create and save message
+      const message = await storage.createMessage({
+        bookingId,
+        senderId: userId,
+        content,
+      });
+
+      // Broadcast to all SSE clients connected to this booking
+      messageBroadcaster.broadcastMessage(bookingId, {
+        type: 'message',
+        data: message,
+      });
+
+      // Return the created message
+      return res.status(201).json(message);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid message content" });
+      }
+      console.error('[POST Message] Error:', error);
       return res.status(500).json({ message: error.message });
     }
   });
