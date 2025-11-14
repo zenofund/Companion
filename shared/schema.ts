@@ -79,6 +79,8 @@ export const bookings = pgTable("bookings", {
   status: bookingStatusEnum("status").default("pending"),
   requestExpiresAt: timestamp("request_expires_at"),
   completionRequestedAt: timestamp("completion_requested_at"),
+  disputeReason: text("dispute_reason"),
+  disputedAt: timestamp("disputed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

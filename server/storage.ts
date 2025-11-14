@@ -26,6 +26,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc, gte, isNotNull } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
   // Users
@@ -104,7 +105,10 @@ export interface IStorage {
     totalBookings: number;
     totalRevenue: string;
     pendingModeration: number;
+    disputedBookings: number;
   }>;
+  getDisputedBookings(): Promise<any[]>;
+  resolveDispute(bookingId: string, resolution: "complete" | "revoke", adminId: string, notes?: string): Promise<Booking>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -727,6 +731,7 @@ export class DatabaseStorage implements IStorage {
     totalBookings: number;
     totalRevenue: string;
     pendingModeration: number;
+    disputedBookings: number;
   }> {
     const [userCount] = await db
       .select({ count: sql<number>`count(*)` })
@@ -750,13 +755,128 @@ export class DatabaseStorage implements IStorage {
       .from(companions)
       .where(eq(companions.moderationStatus, "pending"));
 
+    const [disputedCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(bookings)
+      .where(eq(bookings.status, "disputed"));
+
     return {
       totalUsers: Number(userCount.count) || 0,
       totalCompanions: Number(companionCount.count) || 0,
       totalBookings: Number(bookingCount.count) || 0,
       totalRevenue: revenueSum.sum || "0",
       pendingModeration: Number(pendingCount.count) || 0,
+      disputedBookings: Number(disputedCount.count) || 0,
     };
+  }
+
+  async getDisputedBookings(): Promise<any[]> {
+    // Use alias for companion's user to avoid conflict
+    const companionUser = alias(users, "companionUser");
+    
+    const results = await db
+      .select({
+        booking: bookings,
+        client: users,
+        companion: companions,
+        companionUser: companionUser,
+        payment: payments,
+      })
+      .from(bookings)
+      .leftJoin(users, eq(bookings.clientId, users.id))
+      .leftJoin(companions, eq(bookings.companionId, companions.id))
+      .leftJoin(companionUser, eq(companions.userId, companionUser.id))
+      .leftJoin(payments, eq(bookings.id, payments.bookingId))
+      .where(eq(bookings.status, "disputed"))
+      .orderBy(desc(bookings.disputedAt));
+
+    return results.map(r => ({
+      ...r.booking,
+      clientName: r.client?.name || "Unknown",
+      clientEmail: r.client?.email,
+      companionName: r.companionUser?.name || "Unknown",
+      companionEmail: r.companionUser?.email,
+      payment: r.payment,
+    }));
+  }
+
+  async resolveDispute(
+    bookingId: string,
+    resolution: "complete" | "revoke",
+    adminId: string,
+    notes?: string
+  ): Promise<Booking> {
+    const booking = await this.getBooking(bookingId);
+    if (!booking) {
+      throw new Error("Booking not found");
+    }
+
+    if (booking.status !== "disputed") {
+      throw new Error("Booking is not in disputed status");
+    }
+
+    // Resolve based on resolution type
+    if (resolution === "complete") {
+      // Admin sides with companion - complete the booking
+      const [updatedBooking] = await db
+        .update(bookings)
+        .set({ 
+          status: "completed",
+          updatedAt: new Date(),
+        })
+        .where(eq(bookings.id, bookingId))
+        .returning();
+
+      // Mark payment as paid
+      await db
+        .update(payments)
+        .set({ 
+          status: "paid",
+          updatedAt: new Date(),
+        })
+        .where(eq(payments.bookingId, bookingId));
+
+      // Log admin action
+      await this.createAdminLog({
+        adminId,
+        action: "resolve_dispute_complete",
+        targetType: "booking",
+        targetId: bookingId,
+        details: { resolution, notes },
+      });
+
+      return updatedBooking;
+    } else {
+      // Admin sides with client - revoke/cancel the booking
+      const [updatedBooking] = await db
+        .update(bookings)
+        .set({ 
+          status: "cancelled",
+          updatedAt: new Date(),
+        })
+        .where(eq(bookings.id, bookingId))
+        .returning();
+
+      // Mark payment for manual refund processing
+      await db
+        .update(payments)
+        .set({ 
+          status: "refunded",
+          updatedAt: new Date(),
+        })
+        .where(eq(payments.bookingId, bookingId));
+
+      // Log admin action
+      await this.createAdminLog({
+        adminId,
+        action: "resolve_dispute_revoke",
+        targetType: "booking",
+        targetId: bookingId,
+        details: { resolution, notes },
+      });
+
+      return updatedBooking;
+    }
   }
 }
 

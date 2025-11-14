@@ -7,6 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Calendar, Banknote, Heart, Star, MessageCircle, Clock, Search, Map, List, CheckCircle, AlertCircle, MapPin } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { CompanionCard } from "@/components/companion/CompanionCard";
@@ -21,6 +33,8 @@ export default function ClientDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [ratingModalOpen, setRatingModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [disputingBookingId, setDisputingBookingId] = useState<string | null>(null);
+  const [disputeReason, setDisputeReason] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -166,13 +180,15 @@ export default function ClientDashboard() {
 
   // Dispute mutation
   const disputeMutation = useMutation({
-    mutationFn: async (bookingId: string) => {
-      return await apiRequest("POST", `/api/bookings/${bookingId}/dispute`, {});
+    mutationFn: async ({ bookingId, reason }: { bookingId: string; reason: string }) => {
+      return await apiRequest("POST", `/api/bookings/${bookingId}/dispute`, { reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings/client"] });
       queryClient.invalidateQueries({ queryKey: ["/api/bookings/client/pending-completion"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats/client"] });
+      setDisputingBookingId(null);
+      setDisputeReason("");
       toast({
         title: "Dispute opened",
         description: "The booking has been marked as disputed. Our team will review it shortly.",
@@ -186,6 +202,22 @@ export default function ClientDashboard() {
       });
     },
   });
+
+  const handleDispute = () => {
+    if (!disputingBookingId) return;
+
+    const trimmedReason = disputeReason.trim();
+    if (trimmedReason.length < 10 || trimmedReason.length > 500) {
+      toast({
+        title: "Invalid reason",
+        description: "Dispute reason must be between 10 and 500 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    disputeMutation.mutate({ bookingId: disputingBookingId, reason: trimmedReason });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -558,12 +590,11 @@ export default function ClientDashboard() {
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto"
-                                onClick={() => disputeMutation.mutate(booking.id)}
-                                disabled={disputeMutation.isPending}
+                                onClick={() => setDisputingBookingId(booking.id)}
                                 data-testid={`button-dispute-${booking.id}`}
                               >
                                 <AlertCircle className="h-4 w-4 mr-2" />
-                                {disputeMutation.isPending ? "Disputing..." : "Dispute"}
+                                Dispute
                               </Button>
                               <Button
                                 size="sm"
@@ -680,6 +711,54 @@ export default function ClientDashboard() {
           }
         />
       )}
+
+      {/* Dispute Dialog */}
+      <AlertDialog 
+        open={!!disputingBookingId} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setDisputingBookingId(null);
+            setDisputeReason("");
+          }
+        }}
+      >
+        <AlertDialogContent data-testid="dialog-dispute-booking">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dispute Booking</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please provide a detailed reason for disputing this booking. Our team will review your dispute and take appropriate action.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="dispute-reason">Dispute Reason</Label>
+            <Textarea
+              id="dispute-reason"
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              placeholder="Please describe the issue (10-500 characters)..."
+              className="mt-2"
+              rows={4}
+              data-testid="textarea-dispute-reason"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              {disputeReason.trim().length}/500 characters
+              {disputeReason.trim().length > 0 && disputeReason.trim().length < 10 && (
+                <span className="text-destructive ml-2">Minimum 10 characters required</span>
+              )}
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-dispute">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDispute}
+              disabled={disputeMutation.isPending}
+              data-testid="button-confirm-dispute"
+            >
+              {disputeMutation.isPending ? "Submitting..." : "Submit Dispute"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

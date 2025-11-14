@@ -985,6 +985,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // Validate request body
+      const disputeSchema = z.object({
+        reason: z.string().min(10, "Reason must be at least 10 characters").max(500, "Reason must not exceed 500 characters"),
+      });
+
+      const { reason } = disputeSchema.parse(req.body);
+
       const booking = await storage.getBooking(req.params.id);
       if (!booking) {
         return res.status(404).json({ message: "Booking not found" });
@@ -999,16 +1006,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Booking is not pending completion" });
       }
 
-      const updated = await storage.updateBooking(booking.id, { status: "disputed" });
+      const updated = await storage.updateBooking(booking.id, { 
+        status: "disputed",
+        disputeReason: reason,
+        disputedAt: new Date(),
+      });
       
       console.log("[Booking] Dispute opened:", {
         bookingId: booking.id,
         clientId: booking.clientId,
         companionId: booking.companionId,
+        reason,
       });
 
       return res.json(updated);
     } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
       return res.status(500).json({ message: error.message });
     }
   });
@@ -1400,6 +1415,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return res.json(companionsWithUsers);
     } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/disputed-bookings", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      const disputedBookings = await storage.getDisputedBookings();
+      return res.json(disputedBookings);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/bookings/:id/resolve-dispute", async (req, res) => {
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    try {
+      // Validate request body
+      const resolveSchema = z.object({
+        resolution: z.enum(["complete", "revoke"], {
+          errorMap: () => ({ message: "Resolution must be either 'complete' or 'revoke'" }),
+        }),
+        notes: z.string().max(500, "Notes must not exceed 500 characters").optional(),
+      });
+
+      const { resolution, notes } = resolveSchema.parse(req.body);
+
+      const updatedBooking = await storage.resolveDispute(
+        req.params.id,
+        resolution,
+        req.session.user.id,
+        notes
+      );
+
+      console.log("[Admin] Dispute resolved:", {
+        bookingId: req.params.id,
+        resolution,
+        adminId: req.session.user.id,
+      });
+
+      return res.json(updatedBooking);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
       return res.status(500).json({ message: error.message });
     }
   });
