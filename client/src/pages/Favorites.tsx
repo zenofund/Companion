@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/useUser";
@@ -6,10 +7,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompanionCard } from "@/components/companion/CompanionCard";
 import { Heart, MapPin } from "lucide-react";
 import { getQueryFn } from "@/lib/queryClient";
+import { calculateDistance } from "@/lib/geo-utils";
 
 export default function Favorites() {
   const { data: user, isLoading: userLoading } = useUser();
   const [, setLocation] = useLocation();
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
+  // Get user's geolocation
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        },
+      );
+    }
+  }, []);
 
   const { data: favoriteCompanions, isLoading } = useQuery<any[]>({
     queryKey: ["/api/favorites/companions"],
@@ -59,12 +82,25 @@ export default function Favorites() {
           </div>
         ) : favoriteCompanions && favoriteCompanions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {favoriteCompanions.map((companion: any) => (
-              <CompanionCard
-                key={companion.id}
-                companion={companion}
-              />
-            ))}
+            {favoriteCompanions.map((companion: any) => {
+              const distance =
+                userLocation && companion.latitude && companion.longitude
+                  ? calculateDistance(
+                      userLocation.lat,
+                      userLocation.lng,
+                      parseFloat(companion.latitude),
+                      parseFloat(companion.longitude),
+                    )
+                  : undefined;
+              
+              return (
+                <CompanionCard
+                  key={companion.id}
+                  companion={companion}
+                  distance={distance}
+                />
+              );
+            })}
           </div>
         ) : (
           <Card className="p-12">

@@ -2,6 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { messageBroadcaster } from "./message-broadcaster";
+
+// Re-export storage for use in other modules
+export { storage };
 import { moderateText, moderateImage } from "./openai-moderation";
 import { 
   initializePayment, 

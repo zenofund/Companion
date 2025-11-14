@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { calculateAge } from "@/lib/utils";
+import { formatDistance } from "@/lib/geo-utils";
 
 interface CompanionCardProps {
   companion: {
@@ -55,6 +56,17 @@ export function CompanionCard({ companion, distance }: CompanionCardProps) {
           >
             <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
             Available Now
+          </Badge>
+        )}
+
+        {/* Distance Badge */}
+        {distance !== undefined && (
+          <Badge 
+            className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm text-foreground gap-1.5"
+            data-testid={`badge-distance-${companion.id}`}
+          >
+            <MapPin className="h-3 w-3" />
+            {formatDistance(distance)}
           </Badge>
         )}
 
