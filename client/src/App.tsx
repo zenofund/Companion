@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/dashboard/AdminDashboard";
 import CompanionOnboarding from "@/pages/onboarding/CompanionOnboarding";
 import EditProfile from "@/pages/companion/EditProfile";
 import BookingChat from "@/pages/BookingChat";
+import Favorites from "@/pages/Favorites";
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/companion/edit-profile" component={EditProfile} />
       <Route path="/companion/:id" component={CompanionProfile} />
       <Route path="/booking/:id/chat" component={BookingChat} />
+      <Route path="/favorites" component={Favorites} />
       <Route path="/dashboard/client" component={ClientDashboard} />
       <Route path="/dashboard/companion" component={CompanionDashboard} />
       <Route path="/dashboard/admin" component={AdminDashboard} />
