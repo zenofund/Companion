@@ -28,6 +28,12 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
   const retryCountRef = useRef(0);
   const isActiveRef = useRef(true); // Track if component is still mounted
   const maxRetries = 5;
+  
+  // Store onMessage in a ref so we can access latest version without recreating connect
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   const connect = useCallback(() => {
     // Re-activate component when connection attempt starts
@@ -70,8 +76,8 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
           retryCountRef.current = 0; // Reset retry count on successful connection
         }
         
-        if (onMessage) {
-          onMessage(message);
+        if (onMessageRef.current) {
+          onMessageRef.current(message);
         }
       } catch (error) {
         console.error("[Chat WebSocket] Error parsing message:", error);
@@ -123,7 +129,7 @@ export function useWebSocket({ userId, onMessage }: UseWebSocketOptions) {
       console.error("[Chat WebSocket] Connection error:", error);
       setLastError('Connection error occurred');
     };
-  }, [onMessage]);
+  }, []); // No dependencies - uses refs and setState
 
   const sendMessage = useCallback((bookingId: string, content: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
