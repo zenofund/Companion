@@ -38,17 +38,24 @@ export default function Landing() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          });
+          };
+          console.log("[Landing] User location obtained:", location);
+          setUserLocation(location);
         },
         (error) => {
-          console.error("Error getting location:", error);
+          console.error("[Landing] Error getting location:", error);
           // Default to a city center if geolocation fails
-          setUserLocation({ lat: 40.7128, lng: -74.006 }); // New York
+          const defaultLocation = { lat: 9.0765, lng: 7.3986 }; // Abuja, Nigeria
+          console.log("[Landing] Using default location:", defaultLocation);
+          setUserLocation(defaultLocation);
         },
       );
+    } else {
+      console.warn("[Landing] Geolocation not supported, using default location");
+      setUserLocation({ lat: 9.0765, lng: 7.3986 }); // Abuja, Nigeria
     }
   }, []);
 
@@ -92,6 +99,11 @@ export default function Landing() {
               parseFloat(c.longitude),
             )
           : undefined;
+      console.log(`[Landing] Companion ${c.name}: distance =`, distance, {
+        hasUserLocation: !!userLocation,
+        hasLatitude: !!c.latitude,
+        hasLongitude: !!c.longitude,
+      });
       return { ...c, distance };
     })
     .sort((a, b) => (a.distance || 999) - (b.distance || 999));

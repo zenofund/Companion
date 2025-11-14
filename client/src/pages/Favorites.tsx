@@ -22,15 +22,24 @@ export default function Favorites() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          });
+          };
+          console.log("[Favorites] User location obtained:", location);
+          setUserLocation(location);
         },
         (error) => {
-          console.error("Error getting location:", error);
+          console.error("[Favorites] Error getting location:", error);
+          // Default to a city center if geolocation fails
+          const defaultLocation = { lat: 9.0765, lng: 7.3986 }; // Abuja, Nigeria
+          console.log("[Favorites] Using default location:", defaultLocation);
+          setUserLocation(defaultLocation);
         },
       );
+    } else {
+      console.warn("[Favorites] Geolocation not supported, using default location");
+      setUserLocation({ lat: 9.0765, lng: 7.3986 }); // Abuja, Nigeria
     }
   }, []);
 
