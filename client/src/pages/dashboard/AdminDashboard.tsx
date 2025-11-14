@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/useUser";
@@ -431,24 +431,9 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="companions" className="w-full">
-          <TabsList>
-            <TabsTrigger value="companions" data-testid="tab-companions">
-              Companion Moderation ({stats?.pendingModeration || 0})
-            </TabsTrigger>
-            <TabsTrigger value="disputes" data-testid="tab-disputes">
-              Disputes ({stats?.disputedBookings || 0})
-            </TabsTrigger>
-            <TabsTrigger value="settings" data-testid="tab-settings">
-              Platform Settings
-            </TabsTrigger>
-            <TabsTrigger value="activity" data-testid="tab-activity">
-              Activity Logs
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="companions" className="mt-6">
+        {/* Moderation Section */}
+        {selectedSection === "moderation" && (
+          <div className="mt-6">
             <div className="space-y-4">
               {companionsLoading ? (
                 <Card>
@@ -576,9 +561,12 @@ export default function AdminDashboard() {
                 </Card>
               )}
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="disputes" className="mt-6">
+        {/* Bookings Section */}
+        {selectedSection === "bookings" && (
+          <div className="mt-6">
             <div className="space-y-4">
               {disputesLoading ? (
                 <Card>
@@ -689,9 +677,12 @@ export default function AdminDashboard() {
                 </Card>
               )}
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="settings" className="mt-6">
+        {/* Settings Section */}
+        {selectedSection === "settings" && (
+          <div className="mt-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -742,9 +733,12 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="activity" className="mt-6">
+        {/* Logs Section */}
+        {selectedSection === "logs" && (
+          <div className="mt-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -796,9 +790,9 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
+          </div>
+        )}
+      </DashboardLayout>
 
       {/* Resolve Dispute Dialog */}
       <AlertDialog 
@@ -849,6 +843,6 @@ export default function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

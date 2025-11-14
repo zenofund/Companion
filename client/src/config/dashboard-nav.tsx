@@ -61,12 +61,12 @@ export const companionNavItems: NavItem[] = [
 
 export const adminNavItems: NavItem[] = [
   {
-    value: "companions",
+    value: "moderation",
     label: "Companion Moderation",
     icon: Shield,
   },
   {
-    value: "disputes",
+    value: "bookings",
     label: "Disputes",
     icon: AlertTriangle,
   },
@@ -76,7 +76,7 @@ export const adminNavItems: NavItem[] = [
     icon: Settings,
   },
   {
-    value: "activity",
+    value: "logs",
     label: "Activity Logs",
     icon: Activity,
   },
