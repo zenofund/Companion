@@ -335,41 +335,41 @@ export default function CompanionDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {pendingRequests.map((request: any) => (
                 <Card key={request.id} className="border-accent" data-testid={`request-card-${request.id}`}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-heading text-lg font-semibold">
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-heading text-base sm:text-lg lg:text-xl font-semibold leading-snug">
                           {request.clientName}
                         </h3>
-                        <Badge variant="outline" className="text-xs">
-                          <Clock className="h-3 w-3 mr-1" />
+                        <Badge variant="outline" className="text-[10px] sm:text-xs">
+                          <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" />
                           {calculateTimeRemaining(request.requestExpiresAt)}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-3 sm:gap-4 text-sm sm:text-base lg:text-[17px] text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground">{format(new Date(request.bookingDate), "PPP")}</p>
-                          <p className="text-xs">Date</p>
+                          <p className="text-xs sm:text-sm">Date</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{request.hours} hours</p>
-                          <p className="text-xs">Duration</p>
+                          <p className="text-xs sm:text-sm">Duration</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">₦{request.totalAmount}</p>
-                          <p className="text-xs">Amount</p>
+                          <p className="text-xs sm:text-sm">Amount</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{request.meetingLocation}</p>
-                          <p className="text-xs">Location</p>
+                          <p className="text-xs sm:text-sm">Location</p>
                         </div>
                       </div>
                       {request.specialRequests && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm sm:text-base lg:text-[17px] text-muted-foreground">
                           <span className="font-medium">Note:</span> {request.specialRequests}
                         </p>
                       )}
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           variant="default"
                           size="sm"
@@ -417,40 +417,40 @@ export default function CompanionDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {reallyActiveBookings.map((booking: any) => (
                 <Card key={booking.id} className="border-primary/20" data-testid={`active-booking-${booking.id}`}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-heading text-lg font-semibold">
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-heading text-base sm:text-lg lg:text-xl font-semibold leading-snug">
                           {booking.clientName}
                         </h3>
-                        <Badge variant="default" className="text-xs">
+                        <Badge variant="default" className="text-[10px] sm:text-xs">
                           {booking.status === "accepted" ? "Upcoming" : "In Progress"}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-3 sm:gap-4 text-sm sm:text-base lg:text-[17px] text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                          <p className="text-xs">Date</p>
+                          <p className="text-xs sm:text-sm">Date</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{booking.hours} hours</p>
-                          <p className="text-xs">Duration</p>
+                          <p className="text-xs sm:text-sm">Duration</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                          <p className="text-xs">Amount</p>
+                          <p className="text-xs sm:text-sm">Amount</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                          <p className="text-xs">Location</p>
+                          <p className="text-xs sm:text-sm">Location</p>
                         </div>
                       </div>
                       {booking.specialRequests && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm sm:text-base lg:text-[17px] text-muted-foreground">
                           <span className="font-medium">Note:</span> {booking.specialRequests}
                         </p>
                       )}
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -510,36 +510,36 @@ export default function CompanionDashboard() {
                 
                 return (
                   <Card key={booking.id} className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/30" data-testid={`pending-completion-${booking.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-heading text-lg font-semibold">
+                    <CardContent className="p-4 sm:p-5 lg:p-6">
+                      <div className="flex flex-col gap-3 sm:gap-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-heading text-base sm:text-lg lg:text-xl font-semibold leading-snug">
                             {booking.clientName}
                           </h3>
-                          <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs">
+                          <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-[10px] sm:text-xs">
                             Pending
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-3 sm:gap-4 text-sm sm:text-base lg:text-[17px] text-muted-foreground">
                           <div>
                             <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                            <p className="text-xs">Date</p>
+                            <p className="text-xs sm:text-sm">Date</p>
                           </div>
                           <div>
                             <p className="font-medium text-foreground">{booking.hours} hours</p>
-                            <p className="text-xs">Duration</p>
+                            <p className="text-xs sm:text-sm">Duration</p>
                           </div>
                           <div>
                             <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                            <p className="text-xs">Amount</p>
+                            <p className="text-xs sm:text-sm">Amount</p>
                           </div>
                           <div>
                             <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                            <p className="text-xs">Location</p>
+                            <p className="text-xs sm:text-sm">Location</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
-                          <Clock className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs sm:text-sm bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 px-3 py-2 rounded-md">
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span>
                             {hoursRemaining > 0 
                               ? `Auto-complete in ${hoursRemaining}h`
@@ -571,30 +571,30 @@ export default function CompanionDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {completedBookings.map((booking: any) => (
                 <Card key={booking.id} className="border-muted" data-testid={`completed-booking-${booking.id}`}>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-heading text-lg font-semibold">
+                  <CardContent className="p-4 sm:p-5 lg:p-6">
+                    <div className="flex flex-col gap-3 sm:gap-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-heading text-base sm:text-lg lg:text-xl font-semibold leading-snug">
                           {booking.clientName}
                         </h3>
-                        <Badge variant="secondary" className="text-xs">Completed</Badge>
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs">Completed</Badge>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-3 sm:gap-4 text-sm sm:text-base lg:text-[17px] text-muted-foreground">
                         <div>
                           <p className="font-medium text-foreground">{format(new Date(booking.bookingDate), "PPP")}</p>
-                          <p className="text-xs">Date</p>
+                          <p className="text-xs sm:text-sm">Date</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{booking.hours} hours</p>
-                          <p className="text-xs">Duration</p>
+                          <p className="text-xs sm:text-sm">Duration</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">₦{booking.totalAmount}</p>
-                          <p className="text-xs">Amount</p>
+                          <p className="text-xs sm:text-sm">Amount</p>
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{booking.meetingLocation}</p>
-                          <p className="text-xs">Location</p>
+                          <p className="text-xs sm:text-sm">Location</p>
                         </div>
                       </div>
                       <Button
