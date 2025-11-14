@@ -76,11 +76,7 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
   // HTTP POST mutation for sending messages
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      return await apiRequest(`/api/bookings/${bookingId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
+      return await apiRequest('POST', `/api/bookings/${bookingId}/messages`, { content });
     },
     onError: (error: any) => {
       console.error('[POST Message] Error:', error);
@@ -120,7 +116,7 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
   }
 
   return (
-    <Card className="flex flex-col h-[600px]">
+    <Card className="flex flex-col h-[400px]">
       {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
