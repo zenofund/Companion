@@ -234,6 +234,16 @@ export default function AdminDashboard() {
     },
   });
 
+  // All useMemo calls must be at the top before conditional returns
+  const navItemsWithBadges = useMemo(() => 
+    adminNavItems.map(item => ({
+      ...item,
+      badge: item.value === "moderation" ? pendingCompanions?.length : 
+             item.value === "bookings" ? disputedBookings?.length : undefined,
+    })),
+    [pendingCompanions, disputedBookings]
+  );
+
   const handleApprove = (companionId: string) => {
     approveMutation.mutate(companionId);
   };
@@ -305,15 +315,6 @@ export default function AdminDashboard() {
   if (!user || user.role !== "admin") {
     return null;
   }
-
-  const navItemsWithBadges = useMemo(() => 
-    adminNavItems.map(item => ({
-      ...item,
-      badge: item.value === "moderation" ? pendingCompanions?.length : 
-             item.value === "bookings" ? disputedBookings?.length : undefined,
-    })),
-    [pendingCompanions, disputedBookings]
-  );
 
   return (
     <>

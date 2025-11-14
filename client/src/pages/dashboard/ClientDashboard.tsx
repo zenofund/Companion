@@ -317,9 +317,8 @@ export default function ClientDashboard() {
         </div>
 
         {/* Main Content - Conditional Section Rendering */}
-
-          {/* Browse Companions Tab */}
-          selectedSection === "browse" && (
+        {/* Browse Companions Tab */}
+        {selectedSection === "browse" && (
             <Card>
               <CardContent className="p-6">
                 {/* Search and View Toggle */}
@@ -395,9 +394,11 @@ export default function ClientDashboard() {
                 )}
               </CardContent>
             </Card>
-          )
+        )}
 
-          selectedSection === "bookings" && (
+        {/* Bookings Tab */}
+        {selectedSection === "bookings" && (
+          <>
             {/* Pending Payment Bookings */}
             {pendingPaymentBookings && pendingPaymentBookings.length > 0 && (
               <div className="mb-8">
@@ -676,9 +677,11 @@ export default function ClientDashboard() {
                 </div>
               </div>
             )}
-          )
+          </>
+        )}
 
-          selectedSection === "messages" && (
+        {/* Messages Tab */}
+        {selectedSection === "messages" && (
             <Card>
               <CardContent className="p-12 text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -687,9 +690,10 @@ export default function ClientDashboard() {
                 </p>
               </CardContent>
             </Card>
-          )
+        )}
 
-          selectedSection === "favorites" && (
+        {/* Favorites Tab */}
+        {selectedSection === "favorites" && (
             <Card>
               <CardContent className="p-12 text-center">
                 <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -698,7 +702,7 @@ export default function ClientDashboard() {
                 </p>
               </CardContent>
             </Card>
-          )
+        )}
       </DashboardLayout>
 
       {/* Rating Modal */}
