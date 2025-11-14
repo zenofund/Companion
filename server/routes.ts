@@ -585,8 +585,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Companion not found" });
       }
 
-      // Create booking request (pending companion acceptance) with 24-hour expiry
-      const requestExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      // Create booking request (pending companion acceptance) with 15-minute expiry
+      const requestExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
       const booking = await storage.createBooking({
         clientId: req.session.user.id,
