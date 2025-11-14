@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useMessageStream } from "@/hooks/useMessageStream";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Send, Loader2, WifiOff, RefreshCw, AlertCircle } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 
 interface ChatProps {
@@ -42,36 +42,49 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
     }
   }, [messageHistory]);
 
-  // Memoized WebSocket message handler to prevent unnecessary reconnections
-  const handleWebSocketMessage = useCallback((wsMessage: any) => {
-    if (wsMessage.type === 'message' && wsMessage.data) {
+  // Memoized SSE message handler
+  const handleStreamMessage = useCallback((streamMessage: any) => {
+    if (streamMessage.type === 'message' && streamMessage.data) {
       setMessages((prev) => {
         // Check if message already exists (by id)
-        const exists = prev.some(m => m.id === wsMessage.data.id);
+        const exists = prev.some(m => m.id === streamMessage.data.id);
         if (exists) {
           return prev;
         }
-        return [...prev, wsMessage.data];
+        return [...prev, streamMessage.data];
       });
       // Scroll to bottom
       setTimeout(() => {
         scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
-    } else if (wsMessage.type === 'error') {
-      console.error('WebSocket error:', wsMessage.message);
+    } else if (streamMessage.type === 'connected') {
+      console.log('[SSE] Connected to booking:', streamMessage.bookingId);
     }
-  }, []); // Empty deps - uses setMessages callback form, scrollRef is stable
+  }, []);
 
-  // WebSocket connection
+  // SSE stream connection
   const { 
     isConnected, 
     connectionStatus, 
     lastError, 
-    sendMessage: sendWsMessage,
     manualRetry 
-  } = useWebSocket({
-    userId: currentUserId,
-    onMessage: handleWebSocketMessage,
+  } = useMessageStream({
+    bookingId,
+    onMessage: handleStreamMessage,
+  });
+
+  // HTTP POST mutation for sending messages
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return await apiRequest(`/api/bookings/${bookingId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+    },
+    onError: (error: any) => {
+      console.error('[POST Message] Error:', error);
+    },
   });
 
   // Auto-scroll to bottom on new messages
@@ -81,14 +94,14 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
 
   const handleSend = () => {
     const trimmedMessage = inputMessage.trim();
-    if (!trimmedMessage || !isConnected) return;
+    if (!trimmedMessage || sendMessageMutation.isPending) return;
 
-    const success = sendWsMessage(bookingId, trimmedMessage);
-    
-    if (success) {
-      setInputMessage("");
-      // Server will echo the message back, no need for optimistic update
-    }
+    sendMessageMutation.mutate(trimmedMessage, {
+      onSuccess: () => {
+        setInputMessage("");
+        // Message will be delivered via SSE stream
+      },
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -125,14 +138,9 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
               {connectionStatus === 'disconnected' && (
                 <span className="text-gray-500">○ Disconnected</span>
               )}
-              {connectionStatus === 'failed' && (
+              {connectionStatus === 'error' && (
                 <span className="text-red-600 flex items-center gap-1">
-                  <WifiOff className="h-3 w-3" /> Connection Failed
-                </span>
-              )}
-              {connectionStatus === 'max_retries_reached' && (
-                <span className="text-red-600 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" /> Connection Error
+                  <WifiOff className="h-3 w-3" /> Connection Error
                 </span>
               )}
             </p>
@@ -141,7 +149,7 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
       </div>
 
       {/* Connection Error Alert */}
-      {(connectionStatus === 'failed' || connectionStatus === 'max_retries_reached') && lastError && (
+      {connectionStatus === 'error' && lastError && (
         <div className="p-4 border-b bg-destructive/10">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
