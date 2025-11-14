@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { messageBroadcaster } from "./message-broadcaster";
 import { moderateText, moderateImage } from "./openai-moderation";
@@ -12,11 +11,8 @@ import {
   getBanks 
 } from "./paystack";
 import bcrypt from "bcryptjs";
-import cookie from "cookie";
-import signature from "cookie-signature";
 import { z } from "zod";
 import { insertUserSchema, insertCompanionSchema, insertBookingSchema } from "@shared/schema";
-import { SESSION_SECRET, sessionStore } from "./index";
 
 // Session user interface
 interface SessionUser {
@@ -55,167 +51,6 @@ async function recalculateCompanionRating(companionId: string): Promise<void> {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-
-  // WebSocket server for real-time chat (following blueprint:javascript_websocket)
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  const clients = new Map<string, Set<WebSocket>>();
-
-  wss.on('connection', (ws, req) => {
-    let authenticatedUserId: string | null = null;
-    console.log('[WebSocket] New connection attempt');
-
-    // Parse session cookie from upgrade request
-    const cookies = cookie.parse(req.headers.cookie || '');
-    const sessionCookie = cookies['connect.sid'];
-    
-    if (!sessionCookie) {
-      console.log('[WebSocket] Connection rejected: No session cookie found');
-      ws.close(4001, 'No session cookie');
-      return;
-    }
-
-    console.log('[WebSocket] Session cookie found, verifying signature...');
-
-    // Verify and unsign the session cookie
-    let sessionId: string | false;
-    if (sessionCookie.startsWith('s:')) {
-      // Remove 's:' prefix and unsign
-      sessionId = signature.unsign(sessionCookie.slice(2), SESSION_SECRET);
-    } else {
-      sessionId = signature.unsign(sessionCookie, SESSION_SECRET);
-    }
-
-    if (sessionId === false) {
-      console.log('[WebSocket] Connection rejected: Invalid session signature');
-      ws.close(4001, 'Invalid session signature');
-      return;
-    }
-
-    console.log('[WebSocket] Session signature valid, checking session store...');
-
-    // Validate session in store
-    sessionStore.get(sessionId, (err, session) => {
-      if (err) {
-        console.error('[WebSocket] Session store error:', err);
-        ws.close(4001, 'Session store error');
-        return;
-      }
-      
-      if (!session) {
-        console.log('[WebSocket] Connection rejected: Session not found in store');
-        ws.close(4001, 'Session not found');
-        return;
-      }
-      
-      if (!session.user) {
-        console.log('[WebSocket] Connection rejected: No user in session');
-        ws.close(4001, 'No user in session');
-        return;
-      }
-
-      authenticatedUserId = session.user.id;
-      console.log('[WebSocket] Authentication successful for user:', authenticatedUserId);
-      
-      // Register client connection
-      if (!clients.has(authenticatedUserId)) {
-        clients.set(authenticatedUserId, new Set());
-      }
-      clients.get(authenticatedUserId)!.add(ws);
-      
-      console.log('[WebSocket] Client registered, total connections for user:', clients.get(authenticatedUserId)!.size);
-      
-      // Send auth success
-      ws.send(JSON.stringify({ type: 'auth', success: true, userId: authenticatedUserId }));
-    });
-
-    ws.on('message', async (message) => {
-      try {
-        // Ensure user is authenticated
-        if (!authenticatedUserId) {
-          ws.send(JSON.stringify({ 
-            type: 'error', 
-            message: 'Not authenticated' 
-          }));
-          return;
-        }
-
-        const data = JSON.parse(message.toString());
-
-        if (data.type === 'message') {
-          // Verify booking exists and user is a participant
-          const booking = await storage.getBooking(data.bookingId);
-          if (!booking) {
-            ws.send(JSON.stringify({ 
-              type: 'error', 
-              message: 'Booking not found' 
-            }));
-            return;
-          }
-
-          // Get companion to check userId
-          const companion = await storage.getCompanion(booking.companionId);
-          if (!companion) {
-            ws.send(JSON.stringify({ 
-              type: 'error', 
-              message: 'Companion not found' 
-            }));
-            return;
-          }
-
-          // Verify user is part of this booking
-          const isClient = booking.clientId === authenticatedUserId;
-          const isCompanion = companion.userId === authenticatedUserId;
-          
-          if (!isClient && !isCompanion) {
-            ws.send(JSON.stringify({ 
-              type: 'error', 
-              message: 'Not authorized for this booking' 
-            }));
-            return;
-          }
-
-          // Save message to database
-          const msg = await storage.createMessage({
-            bookingId: data.bookingId,
-            senderId: authenticatedUserId,
-            content: data.content,
-          });
-
-          // Broadcast to all participants (including sender for echo)
-          const participantIds = [booking.clientId, companion.userId];
-          
-          participantIds.forEach(participantId => {
-            const sockets = clients.get(participantId);
-            if (sockets) {
-              sockets.forEach(socket => {
-                if (socket.readyState === WebSocket.OPEN) {
-                  socket.send(JSON.stringify({
-                    type: 'message',
-                    data: msg,
-                  }));
-                }
-              });
-            }
-          });
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-        ws.send(JSON.stringify({ 
-          type: 'error', 
-          message: 'Internal server error' 
-        }));
-      }
-    });
-
-    ws.on('close', () => {
-      if (authenticatedUserId && clients.has(authenticatedUserId)) {
-        clients.get(authenticatedUserId)!.delete(ws);
-        if (clients.get(authenticatedUserId)!.size === 0) {
-          clients.delete(authenticatedUserId);
-        }
-      }
-    });
-  });
 
   // ========== AUTHENTICATION ROUTES ==========
 
