@@ -61,15 +61,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on('connection', (ws, req) => {
     let authenticatedUserId: string | null = null;
+    console.log('[WebSocket] New connection attempt');
 
     // Parse session cookie from upgrade request
     const cookies = cookie.parse(req.headers.cookie || '');
     const sessionCookie = cookies['connect.sid'];
     
     if (!sessionCookie) {
+      console.log('[WebSocket] Connection rejected: No session cookie found');
       ws.close(4001, 'No session cookie');
       return;
     }
+
+    console.log('[WebSocket] Session cookie found, verifying signature...');
 
     // Verify and unsign the session cookie
     let sessionId: string | false;
@@ -81,24 +85,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     if (sessionId === false) {
+      console.log('[WebSocket] Connection rejected: Invalid session signature');
       ws.close(4001, 'Invalid session signature');
       return;
     }
 
+    console.log('[WebSocket] Session signature valid, checking session store...');
+
     // Validate session in store
     sessionStore.get(sessionId, (err, session) => {
-      if (err || !session || !session.user) {
-        ws.close(4001, 'Invalid or expired session');
+      if (err) {
+        console.error('[WebSocket] Session store error:', err);
+        ws.close(4001, 'Session store error');
+        return;
+      }
+      
+      if (!session) {
+        console.log('[WebSocket] Connection rejected: Session not found in store');
+        ws.close(4001, 'Session not found');
+        return;
+      }
+      
+      if (!session.user) {
+        console.log('[WebSocket] Connection rejected: No user in session');
+        ws.close(4001, 'No user in session');
         return;
       }
 
       authenticatedUserId = session.user.id;
+      console.log('[WebSocket] Authentication successful for user:', authenticatedUserId);
       
       // Register client connection
       if (!clients.has(authenticatedUserId)) {
         clients.set(authenticatedUserId, new Set());
       }
       clients.get(authenticatedUserId)!.add(ws);
+      
+      console.log('[WebSocket] Client registered, total connections for user:', clients.get(authenticatedUserId)!.size);
       
       // Send auth success
       ws.send(JSON.stringify({ type: 'auth', success: true, userId: authenticatedUserId }));

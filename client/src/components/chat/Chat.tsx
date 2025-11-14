@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Send, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Send, Loader2, WifiOff, RefreshCw, AlertCircle } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 
@@ -41,27 +42,36 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
     }
   }, [messageHistory]);
 
+  // Memoized WebSocket message handler to prevent unnecessary reconnections
+  const handleWebSocketMessage = useCallback((wsMessage: any) => {
+    if (wsMessage.type === 'message' && wsMessage.data) {
+      setMessages((prev) => {
+        // Check if message already exists (by id)
+        const exists = prev.some(m => m.id === wsMessage.data.id);
+        if (exists) {
+          return prev;
+        }
+        return [...prev, wsMessage.data];
+      });
+      // Scroll to bottom
+      setTimeout(() => {
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else if (wsMessage.type === 'error') {
+      console.error('WebSocket error:', wsMessage.message);
+    }
+  }, []); // Empty deps - uses setMessages callback form, scrollRef is stable
+
   // WebSocket connection
-  const { isConnected, sendMessage: sendWsMessage } = useWebSocket({
+  const { 
+    isConnected, 
+    connectionStatus, 
+    lastError, 
+    sendMessage: sendWsMessage,
+    manualRetry 
+  } = useWebSocket({
     userId: currentUserId,
-    onMessage: (wsMessage) => {
-      if (wsMessage.type === 'message' && wsMessage.data) {
-        setMessages((prev) => {
-          // Check if message already exists (by id)
-          const exists = prev.some(m => m.id === wsMessage.data.id);
-          if (exists) {
-            return prev;
-          }
-          return [...prev, wsMessage.data];
-        });
-        // Scroll to bottom
-        setTimeout(() => {
-          scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      } else if (wsMessage.type === 'error') {
-        console.error('WebSocket error:', wsMessage.message);
-      }
-    },
+    onMessage: handleWebSocketMessage,
   });
 
   // Auto-scroll to bottom on new messages
@@ -105,16 +115,52 @@ export function Chat({ bookingId, currentUserId, otherUserName }: ChatProps) {
             <h3 className="font-semibold">
               {otherUserName || "Chat"}
             </h3>
-            <p className="text-xs text-muted-foreground">
-              {isConnected ? (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              {connectionStatus === 'connected' && (
                 <span className="text-green-600">● Connected</span>
-              ) : (
-                <span className="text-gray-500">○ Connecting...</span>
+              )}
+              {connectionStatus === 'connecting' && (
+                <span className="text-yellow-600">○ Connecting...</span>
+              )}
+              {connectionStatus === 'disconnected' && (
+                <span className="text-gray-500">○ Disconnected</span>
+              )}
+              {connectionStatus === 'failed' && (
+                <span className="text-red-600 flex items-center gap-1">
+                  <WifiOff className="h-3 w-3" /> Connection Failed
+                </span>
+              )}
+              {connectionStatus === 'max_retries_reached' && (
+                <span className="text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> Connection Error
+                </span>
               )}
             </p>
           </div>
         </div>
       </div>
+
+      {/* Connection Error Alert */}
+      {(connectionStatus === 'failed' || connectionStatus === 'max_retries_reached') && lastError && (
+        <div className="p-4 border-b bg-destructive/10">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{lastError}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={manualRetry}
+                className="ml-2"
+                data-testid="button-retry-connection"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
