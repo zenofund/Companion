@@ -13,7 +13,7 @@ export default function Favorites() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="pt-28 container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold font-heading mb-2" data-testid="heading-favorites">
             My Favorites
@@ -61,7 +61,7 @@ export default function Favorites() {
             </div>
           </Card>
         )}
-      </div>
+      </main>
     </div>
   );
 }
