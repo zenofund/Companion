@@ -362,30 +362,26 @@ export class DatabaseStorage implements IStorage {
   async expirePendingBookingRequests(): Promise<{ bookingId: string; clientId: string; companionId: string }[]> {
     const now = new Date();
     
-    // Find all pending bookings where requestExpiresAt has passed
+    // Atomically update expired pending bookings and return affected rows
     const expiredRequests = await db
-      .select()
-      .from(bookings)
+      .update(bookings)
+      .set({ status: "expired" })
       .where(
         and(
           eq(bookings.status, "pending"),
           isNotNull(bookings.requestExpiresAt),
           sql`${bookings.requestExpiresAt} < ${now}`
         )
-      );
-
-    const results: { bookingId: string; clientId: string; companionId: string }[] = [];
-
-    for (const booking of expiredRequests) {
-      await this.updateBooking(booking.id, { status: "expired" });
-      results.push({
-        bookingId: booking.id,
-        clientId: booking.clientId,
-        companionId: booking.companionId,
+      )
+      .returning({
+        bookingId: bookings.id,
+        clientId: bookings.clientId,
+        companionId: bookings.companionId,
       });
-    }
 
-    return results;
+    console.log(`[Booking] Auto-expired ${expiredRequests.length} pending booking request(s)`);
+
+    return expiredRequests;
   }
 
   async getCompanionStats(companionId: string): Promise<{

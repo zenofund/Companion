@@ -3,6 +3,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./routes";
 
 const app = express();
 const MemoryStore = createMemoryStore(session);
@@ -106,4 +107,22 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // Auto-expire pending booking requests every minute
+  setInterval(async () => {
+    try {
+      const expiredRequests = await storage.expirePendingBookingRequests();
+      
+      if (expiredRequests.length > 0) {
+        log(`[Booking] Expired ${expiredRequests.length} pending request(s)`);
+        
+        // TODO: Send notifications to affected clients
+        for (const { bookingId, clientId } of expiredRequests) {
+          log(`[Booking] Client ${clientId} notified about expired booking ${bookingId}`);
+        }
+      }
+    } catch (error) {
+      console.error("[Booking] Error in auto-expiration scheduler:", error);
+    }
+  }, 60 * 1000); // Run every 60 seconds
 })();
