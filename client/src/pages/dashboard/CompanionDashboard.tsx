@@ -84,31 +84,7 @@ export default function CompanionDashboard() {
     enabled: !!selectedBooking && ratingModalOpen,
   });
 
-  // Redirect non-companions using effect to avoid render-time side effects
-  useEffect(() => {
-    if (!userLoading && (!user || user.role !== "companion")) {
-      setLocation("/");
-    }
-  }, [user, userLoading, setLocation]);
-
-  // Separate active bookings into truly active and pending completion
-  const reallyActiveBookings = activeBookings?.filter((b: any) => b.status === "accepted" || b.status === "active") || [];
-  const pendingCompletionBookings = activeBookings?.filter((b: any) => b.status === "pending_completion") || [];
-
-  // Loading state
-  if (userLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  // Unauthorized - redirect will happen in effect
-  if (!user || user.role !== "companion") {
-    return null;
-  }
-
+  // All mutations must be at the top
   const toggleAvailabilityMutation = useMutation({
     mutationFn: async (isAvailable: boolean) => {
       return await apiRequest("PATCH", "/api/companion/availability", { isAvailable });
@@ -154,14 +130,7 @@ export default function CompanionDashboard() {
     },
   });
 
-
-  const calculateTimeRemaining = (expiresAt: string) => {
-    const diff = new Date(expiresAt).getTime() - Date.now();
-    const minutes = Math.floor(diff / 60000);
-    return minutes > 0 ? `${minutes}m remaining` : "Expired";
-  };
-
-  // Calculate profile completion based on filled fields (onboarding requirements)
+  // All useMemo calls must be at the top
   const profileCompletion = useMemo(() => {
     if (!profile) return 0;
     
@@ -189,6 +158,37 @@ export default function CompanionDashboard() {
     })),
     [pendingRequests]
   );
+
+  // Redirect non-companions using effect to avoid render-time side effects
+  useEffect(() => {
+    if (!userLoading && (!user || user.role !== "companion")) {
+      setLocation("/");
+    }
+  }, [user, userLoading, setLocation]);
+
+  // Separate active bookings into truly active and pending completion
+  const reallyActiveBookings = activeBookings?.filter((b: any) => b.status === "accepted" || b.status === "active") || [];
+  const pendingCompletionBookings = activeBookings?.filter((b: any) => b.status === "pending_completion") || [];
+
+  // Loading state
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Unauthorized - redirect will happen in effect
+  if (!user || user.role !== "companion") {
+    return null;
+  }
+
+  const calculateTimeRemaining = (expiresAt: string) => {
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    const minutes = Math.floor(diff / 60000);
+    return minutes > 0 ? `${minutes}m remaining` : "Expired";
+  };
 
   return (
     <>

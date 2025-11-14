@@ -62,72 +62,6 @@ export default function ClientDashboard() {
     enabled: !!selectedBooking && ratingModalOpen,
   });
 
-  // Redirect non-clients
-  if (userLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!user || user.role !== "client") {
-    setLocation("/");
-    return null;
-  }
-
-  const pendingPaymentBookings = bookings?.filter((b: any) => b.status === "accepted") || [];
-  const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];
-  const completedBookings = bookings?.filter((b: any) => b.status === "completed") || [];
-
-  // Check for payment status on component mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const paymentStatus = params.get("payment");
-
-    if (paymentStatus === "success") {
-      toast({
-        title: "Payment successful!",
-        description: "Your booking has been confirmed. The companion will be notified.",
-      });
-      // Clear the query parameter
-      setLocation("/dashboard/client");
-    } else if (paymentStatus === "failed") {
-      toast({
-        title: "Payment failed",
-        description: "Your payment could not be processed. Please try again.",
-        variant: "destructive",
-      });
-      setLocation("/dashboard/client");
-    } else if (paymentStatus === "error") {
-      toast({
-        title: "Payment error",
-        description: "An error occurred while processing your payment.",
-        variant: "destructive",
-      });
-      setLocation("/dashboard/client");
-    }
-  }, [toast, setLocation]);
-
-  // Get user's geolocation for browse tab
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          // Default to Lagos, Nigeria if geolocation fails
-          setUserLocation({ lat: 6.5244, lng: 3.3792 });
-        }
-      );
-    }
-  }, []);
-
   // Fetch companions for browse tab
   const { data: companions, isLoading: companionsLoading } = useQuery({
     queryKey: ["/api/companions", userLocation?.lat, userLocation?.lng],
@@ -144,45 +78,7 @@ export default function ClientDashboard() {
     enabled: !!userLocation,
   });
 
-  // Calculate distance between two points
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  // Filter and sort companions by distance
-  const filteredCompanions = companions
-    ?.filter((c: any) => c.moderationStatus === "approved")
-    .filter((c: any) => {
-      if (!searchQuery) return true;
-      return (
-        c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.services?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    })
-    .map((c: any) => {
-      const distance = userLocation && c.latitude && c.longitude
-        ? calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            parseFloat(c.latitude),
-            parseFloat(c.longitude)
-          )
-        : undefined;
-      return { ...c, distance };
-    })
-    .filter((c: any) => c.distance === undefined || c.distance <= 50)
-    .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999));
-
-  // Confirm completion mutation
+  // All mutations must be at the top
   const confirmCompletionMutation = useMutation({
     mutationFn: async (bookingId: string) => {
       return await apiRequest("POST", `/api/bookings/${bookingId}/confirm-completion`, {});
@@ -205,7 +101,6 @@ export default function ClientDashboard() {
     },
   });
 
-  // Dispute mutation
   const disputeMutation = useMutation({
     mutationFn: async ({ bookingId, reason }: { bookingId: string; reason: string }) => {
       return await apiRequest("POST", `/api/bookings/${bookingId}/dispute`, { reason });
@@ -229,6 +124,105 @@ export default function ClientDashboard() {
       });
     },
   });
+
+  // All useEffect calls must be at the top
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get("payment");
+
+    if (paymentStatus === "success") {
+      toast({
+        title: "Payment successful!",
+        description: "Your booking has been confirmed. The companion will be notified.",
+      });
+      setLocation("/dashboard/client");
+    } else if (paymentStatus === "failed") {
+      toast({
+        title: "Payment failed",
+        description: "Your payment could not be processed. Please try again.",
+        variant: "destructive",
+      });
+      setLocation("/dashboard/client");
+    } else if (paymentStatus === "error") {
+      toast({
+        title: "Payment error",
+        description: "An error occurred while processing your payment.",
+        variant: "destructive",
+      });
+      setLocation("/dashboard/client");
+    }
+  }, [toast, setLocation]);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setUserLocation({ lat: 6.5244, lng: 3.3792 });
+        }
+      );
+    }
+  }, []);
+
+  // Redirect non-clients
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "client") {
+    setLocation("/");
+    return null;
+  }
+
+  const pendingPaymentBookings = bookings?.filter((b: any) => b.status === "accepted") || [];
+  const activeBookings = bookings?.filter((b: any) => b.status === "active") || [];
+  const completedBookings = bookings?.filter((b: any) => b.status === "completed") || [];
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const filteredCompanions = companions
+    ?.filter((c: any) => c.moderationStatus === "approved")
+    .filter((c: any) => {
+      if (!searchQuery) return true;
+      return (
+        c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.services?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    })
+    .map((c: any) => {
+      const distance = userLocation && c.latitude && c.longitude
+        ? calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            parseFloat(c.latitude),
+            parseFloat(c.longitude)
+          )
+        : undefined;
+      return { ...c, distance };
+    })
+    .filter((c: any) => c.distance === undefined || c.distance <= 50)
+    .sort((a: any, b: any) => (a.distance || 999) - (b.distance || 999));
 
   const handleDispute = () => {
     if (!disputingBookingId) return;
