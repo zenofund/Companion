@@ -54,6 +54,7 @@ export interface IStorage {
   getCompletedBookings(companionId: string): Promise<any[]>;
   getPendingCompletionBookings(clientId: string): Promise<any[]>;
   autoCompleteExpiredRequests(): Promise<number>;
+  expirePendingBookingRequests(): Promise<{ bookingId: string; clientId: string; companionId: string }[]>;
   getCompanionStats(companionId: string): Promise<{
     activeBookings: number;
     todayEarnings: string;
@@ -356,6 +357,35 @@ export class DatabaseStorage implements IStorage {
     }
 
     return expiredBookings.length;
+  }
+
+  async expirePendingBookingRequests(): Promise<{ bookingId: string; clientId: string; companionId: string }[]> {
+    const now = new Date();
+    
+    // Find all pending bookings where requestExpiresAt has passed
+    const expiredRequests = await db
+      .select()
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.status, "pending"),
+          isNotNull(bookings.requestExpiresAt),
+          sql`${bookings.requestExpiresAt} < ${now}`
+        )
+      );
+
+    const results: { bookingId: string; clientId: string; companionId: string }[] = [];
+
+    for (const booking of expiredRequests) {
+      await this.updateBooking(booking.id, { status: "expired" });
+      results.push({
+        bookingId: booking.id,
+        clientId: booking.clientId,
+        companionId: booking.companionId,
+      });
+    }
+
+    return results;
   }
 
   async getCompanionStats(companionId: string): Promise<{
