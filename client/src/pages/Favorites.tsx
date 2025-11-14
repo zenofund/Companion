@@ -40,16 +40,7 @@ export default function Favorites() {
             {favoriteCompanions.map((companion: any) => (
               <CompanionCard
                 key={companion.id}
-                id={companion.id}
-                name={companion.name}
-                avatar={companion.avatar}
-                bio={companion.bio}
-                hourlyRate={companion.hourlyRate}
-                gallery={companion.gallery}
-                city={companion.city}
-                isAvailable={companion.isAvailable}
-                averageRating={companion.averageRating}
-                totalBookings={companion.totalBookings}
+                companion={companion}
               />
             ))}
           </div>

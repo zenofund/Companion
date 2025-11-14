@@ -228,7 +228,11 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate transition-all" 
+            onClick={() => setLocation("/favorites")}
+            data-testid="card-favorites"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Favorites</CardTitle>
               <Heart className="h-4 w-4 text-muted-foreground" />
@@ -237,6 +241,9 @@ export default function ClientDashboard() {
               <div className="text-2xl font-bold" data-testid="stat-favorites">
                 {stats?.favorites || 0}
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Click to view all
+              </p>
             </CardContent>
           </Card>
 
